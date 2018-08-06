@@ -1,0 +1,5 @@
+{
+  "editor.formatOnSave": true,
+  "prettier.disableLanguages": ["vue", "json"],
+  "javascript.validate.enable": false
+}
