@@ -4,11 +4,17 @@ use config_crate::{Config as RawConfig, ConfigError, Environment, File};
 pub struct Config {
     pub contract_address: String,
     pub infura: Infura,
+    pub http: Http,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Infura {
     pub key: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Http {
+    pub dns_threads: usize,
 }
 
 impl Config {
