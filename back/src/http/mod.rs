@@ -83,7 +83,7 @@ fn build_request(
     auth_header: Option<&str>,
 ) -> Result<Request<Body>, Error> {
     let url_encoded_query = url_encode_params(query);
-    trace!("{} {}?{}", method, path, url_encoded_query);
+    trace!("HTTP 1.1 {} {}?{}", method, path, url_encoded_query);
     let url = if method == &Method::GET {
         format!("{}?{}", path, url_encoded_query)
     } else {
