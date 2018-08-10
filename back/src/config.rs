@@ -3,6 +3,7 @@ use config_crate::{Config as RawConfig, ConfigError, Environment, File};
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub contract_address: String,
+    pub transfer_topic: String,
     pub infura: Infura,
     pub http: Http,
 }

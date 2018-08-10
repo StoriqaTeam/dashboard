@@ -1,0 +1,44 @@
+version: '3'
+services:
+  dashboard:
+    image: dashboard
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile
+    container_name: dashboard
+    working_dir: /app
+    command: ["sh", "-c", "/utils/wait_for_it.sh dashboard-pg:5432 ; diesel migration run ; sleep infinity"]
+    volumes:
+      - ..:/app
+      - cargo-cache:/usr/local/cargo
+    environment:
+      - DATABASE_URL=postgresql://dashboard:dashboard@dashboard-pg/dashboard
+      - PHASH_DIR=/opt/phash/pHash-0.9.6
+      - RUST_LOG=dashboard_core=debug
+    ports:
+      - 8000:8000
+    stdin_open: true
+    depends_on:
+      - dashboard-pg
+
+  dashboard-pg:
+    image: postgres:10
+    container_name: dashboard-pg
+    volumes:
+      - ..:/app
+      - dashboard-postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=dashboard
+      - POSTGRES_DB=dashboard
+      - POSTGRES_PASSWORD=dashboard
+    ports:
+      - 5432:5432
+
+volumes:
+  cargo-cache:
+  dashboard-postgres-data:
+
+networks:
+  default:
+    external:
+      name: dashboard
