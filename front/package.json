@@ -4,15 +4,19 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
+    "classnames": "^2.2.6",
+    "ramda": "^0.25.0",
     "react": "^16.4.2",
     "react-dom": "^16.4.2"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
+    "babel-plugin-transform-es2015-arrow-functions": "^6.22.0",
     "babel-preset-env": "^1.7.0",
     "babel-preset-flow": "^6.23.0",
     "babel-preset-react": "^6.24.1",
     "flow-bin": "^0.78.0",
+    "node-sass": "^4.9.3",
     "parcel-bundler": "^1.9.7"
   },
   "scripts": {

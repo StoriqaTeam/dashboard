@@ -1,11 +1,23 @@
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
 
-import Marketcap from "./components/Marketcap";
+import { MarketcapChart } from "./components/MarketcapChart";
+import { TokenInfo } from "./components/TokenInfo";
+import { CommunityInfo } from "./components/CommunityInfo";
+import { StoreStats } from "./components/StoreStats";
+
+import "./index.scss";
 
 class App extends Component {
   render() {
-    return <Marketcap />;
+    return (
+      <div className="app">
+        <MarketcapChart />
+        <TokenInfo />
+        <StoreStats />
+        <CommunityInfo />
+      </div>
+    );
   }
 }
 

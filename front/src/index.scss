@@ -1,0 +1,108 @@
+@font-face {
+  font-family: IBMPlexSansCond;
+  src: url("./assets/IBMPlexSansCondensed-Regular.ttf");
+}
+
+$color_green: #00ffb8;
+$color_red: #ee5922;
+
+body {
+  background-color: #1d2532;
+  margin: 0;
+  padding: 10px;
+  color: #fff;
+  font-family: "IBMPlexSansCond";
+}
+
+h2 {
+  font-family: "IBMPlexSansCond";
+  font-size: 16px;
+  font-weight: bold;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.75;
+  letter-spacing: normal;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.app {
+  height: 100%;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 41.65% 25% 16.7% 16.7%;
+}
+
+.widget {
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  border-radius: 4px;
+  background-color: #1f2b3c;
+  margin: 8px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  line-height: 2.5;
+
+  .title {
+    opacity: 0.34;
+    font-size: 14px;
+    font-weight: bold;
+    font-style: normal;
+    font-stretch: normal;
+    letter-spacing: normal;
+    color: #ffffff;
+
+    &.uppercase {
+      text-transform: uppercase;
+    }
+    &.usd {
+      color: $color_green;
+      opacity: 1;
+    }
+    &.eth {
+      color: $color_red;
+      opacity: 1;
+    }
+    &.btc {
+      color: #ff9d1f;
+      opacity: 1;
+    }
+  }
+
+  .value {
+    font-size: 14px;
+    font-weight: normal;
+    font-style: normal;
+    font-stretch: normal;
+    letter-spacing: normal;
+    text-align: right;
+    color: #ffffff;
+
+    .positive {
+      color: $color_green;
+    }
+    .negative {
+      color: $color_red;
+    }
+  }
+}
+
+.subtitle {
+  font-size: 12px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  letter-spacing: normal;
+  color: #cfddbb;
+  display: flex;
+  justify-content: right;
+  span + span {
+    margin-left: 20px;
+  }
+}
