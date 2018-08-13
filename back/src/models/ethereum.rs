@@ -5,6 +5,12 @@ use std::time::SystemTime;
 #[derive(Debug, Serialize, Deserialize, Clone, DieselTypes)]
 pub struct TokenAddress(String);
 
+impl TokenAddress {
+    pub fn new(address: String) -> Self {
+        TokenAddress(address)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
 pub struct Transaction {
     pub id: i32,
