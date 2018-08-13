@@ -4,6 +4,7 @@ use super::error::{Error, ErrorKind};
 use futures::Future;
 use http::request_entity;
 use hyper::Method;
+use models::NewTransaction;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -15,14 +16,31 @@ pub struct EthereumClient {
     client: Arc<Client>,
     key: String,
     topic: String,
+    contract_address: String,
 }
 
 impl EthereumClient {
-    pub fn new(client: Arc<Client>, key: String, topic: String) -> Self {
-        EthereumClient { client, key, topic }
+    pub fn new(client: Arc<Client>, key: String, topic: String, contract_address: String) -> Self {
+        EthereumClient { client, key, topic, contract_address }
     }
 
     pub fn fetch_current_block_number(&self) -> impl Future<Item = u64, Error = Error> {
+        self.fetch::<BlockNumberResponse>("eth_blockNumber", &HashMap::new())
+            .and_then(|response| {
+                let hexstr_number = response.result;
+                u64::from_str_radix(&hexstr_number[2..], 16).map_err(|_| {
+                    format_err!(
+                        "Block number request: Error parsing {} as hex string",
+                        hexstr_number
+                    ).context(ErrorKind::Deserizalization)
+                    .into()
+                })
+            })
+    }
+
+    pub fn fetch_transactions(&self) -> impl Future<Item = Vec<NewTransaction>, Error = Error> {
+        let mut params = HashMap::new();
+        params.insert("address", self.);
         self.fetch::<BlockNumberResponse>("eth_blockNumber", &HashMap::new())
             .and_then(|response| {
                 let hexstr_number = response.result;

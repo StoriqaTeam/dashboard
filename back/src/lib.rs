@@ -30,7 +30,7 @@ use self::environment::Environment;
 use failure::Fail;
 use futures::Future;
 
-pub fn current_block_number(config: Config) {
+pub fn print_current_block_number(config: Config) {
     let env = Environment::new(config);
     let future = env
         .ethereum_client

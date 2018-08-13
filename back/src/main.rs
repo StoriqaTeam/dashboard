@@ -11,5 +11,5 @@ fn main() {
             panic!("Error parsing config: {}", e);
         }
     };
-    dashboard_core::current_block_number(config);
+    dashboard_core::print_current_block_number(config);
 }
