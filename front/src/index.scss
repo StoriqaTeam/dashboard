@@ -29,8 +29,15 @@ h2 {
 .app {
   height: 100%;
   width: 100%;
-  display: grid;
-  grid-template-columns: 41.65% 25% 16.7% 16.7%;
+
+  .row1 {
+    display: grid;
+    grid-template-columns: 41.65% 25% 16.7% 16.7%;
+  }
+  .row2 {
+    display: grid;
+    grid-template-columns: 41.65% 41.65% 16.7%;
+  }
 }
 
 .widget {

@@ -13,11 +13,17 @@ class App extends Component {
   render() {
     return (
       <div className="app">
-        {/* <MarketcapChart /> */}
-        <TokenInfo />
-        <StoreStats />
-        <CommunityInfo />
-        <ExchangesStats />
+        <div className="row1">
+          <MarketcapChart />
+          <TokenInfo />
+          <StoreStats />
+          <CommunityInfo />
+        </div>
+        <div className="row2">
+          <div style={{ backgroundColor: "red" }} className="widget" />
+          <div style={{ backgroundColor: "green" }} className="widget" />
+          <ExchangesStats />
+        </div>
       </div>
     );
   }
