@@ -2,7 +2,7 @@
 
 import React, { PureComponent } from "react";
 import type { Node } from "react";
-import { map } from "ramda";
+import { addIndex, map } from "ramda";
 import moment from "moment";
 
 import type { NumValueType } from "../../types";
@@ -68,6 +68,8 @@ type RenderItemInputType = {
   }>
 };
 
+const indexedMap = addIndex(map);
+
 const renderItem = (input: RenderItemInputType) => {
   return (
     <div className="statsRow">
@@ -76,9 +78,9 @@ const renderItem = (input: RenderItemInputType) => {
         <span className="statsTitle">{input.title}</span>
       </div>
       <div className="statsValues">
-        {map(
-          (item: { icon: ?IconType, value: NumValueType }) => (
-            <div className="statsValueRow">
+        {indexedMap(
+          (item: { icon: ?IconType, value: NumValueType }, idx: number) => (
+            <div className="statsValueRow" key={`stats-key-${idx}`}>
               {getIcon(item.icon)}
               <span>{formatNumValue(null, item.value)}</span>
             </div>

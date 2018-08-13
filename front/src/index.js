@@ -5,6 +5,7 @@ import { MarketcapChart } from "./components/MarketcapChart";
 import { TokenInfo } from "./components/TokenInfo";
 import { CommunityInfo } from "./components/CommunityInfo";
 import { StoreStats } from "./components/StoreStats";
+import { ExchangesStats } from "./components/ExchangesStats";
 
 import "./index.scss";
 
@@ -12,10 +13,11 @@ class App extends Component {
   render() {
     return (
       <div className="app">
-        <MarketcapChart />
+        {/* <MarketcapChart /> */}
         <TokenInfo />
         <StoreStats />
         <CommunityInfo />
+        <ExchangesStats />
       </div>
     );
   }
