@@ -4,8 +4,13 @@ pub struct BlockNumberResponse {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct LogsResponse {
+    pub result: Vec<Log>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Log {
     pub address: String,
     pub topics: Vec<String>,
     pub data: String,

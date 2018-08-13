@@ -43,6 +43,22 @@ pub fn print_current_block_number(config: Config) {
     tokio::run(future);
 }
 
+pub fn print_transactions(config: Config, from: Option<u64>, to: Option<u64>) {
+    let env = Environment::new(config);
+    let future = env
+        .ethereum_client
+        .fetch_transactions(from, to)
+        .map(move |transactions| {
+            println!(
+                "Transactions from {:?}, to {:?} are: {:?}",
+                from, to, transactions
+            );
+        }).map_err(|e| {
+            log_error(&e);
+        });
+    tokio::run(future);
+}
+
 fn log_error(e: &Fail) {
     let mut err = e;
     loop {

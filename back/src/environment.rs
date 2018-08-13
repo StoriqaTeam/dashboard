@@ -21,7 +21,7 @@ impl Environment {
             client.clone(),
             config.infura.key.clone(),
             config.transfer_topic.clone(),
-            config.contract_address,
+            config.contract_address.clone(),
         );
 
         Environment {
