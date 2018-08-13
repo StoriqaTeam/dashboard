@@ -117,7 +117,7 @@ impl<
                                     if let Some((from, to)) = from_to {
                                         let mut query = HashMap::new();
                                         let url = format!("https://graphs2.coinmarketcap.com/currencies/storiqa/{}/{}/", from.timestamp(), to.timestamp());
-                                        request_entity::<Vec<CoinMarketCap>>(client, &Method::GET, &url, &query, None)
+                                        request_entity::<Vec<CoinMarketCap>>(client, &Method::GET, &url, &query, None, None)
                                             .map_err(|e| e.context(ErrorKind::Http).into())
                                             .wait()
                                     } else {

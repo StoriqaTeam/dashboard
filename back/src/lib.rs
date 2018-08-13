@@ -55,8 +55,6 @@ use application::Application;
 use errors::Error;
 
 pub fn start_server(config: Config) {
-    let env = Environment::new(config.clone());
-
     // Prepare server
     let thread_count = config.server.thread_count;
 
