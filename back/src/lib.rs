@@ -41,11 +41,11 @@ use futures::Future;
 
 use hyper::{Body, Response, Server};
 use hyper::service::service_fn_ok;
-use hyper::rt::{self, Future};
+use hyper::rt::{self, Future as HyperFuture};
 
 
 pub fn current_block_number(config: Config) {
-    let env = Environment::new(config);
+    let env = Environment::new(config.clone());
 
     // Prepare server
     let thread_count = config.server.thread_count;
@@ -65,7 +65,7 @@ pub fn current_block_number(config: Config) {
 
     let new_service = || {
         service_fn_ok(|_| {
-            Response::new(Body::from(PHRASE))
+            Response::new(Body::from("hello world"))
         })
     };
 
