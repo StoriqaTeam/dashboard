@@ -1,6 +1,4 @@
-mod error;
-
-use self::error::ErrorKind;
+use errors::ErrorKind;
 use failure::{Error, Fail};
 use futures::future;
 use futures::stream::Stream;
