@@ -10,6 +10,7 @@ import "./TokenInfo.scss";
 import type { CurrencyType, NumValueType } from "../../types";
 
 import mock from "./mock";
+import { formatNumber, formatNumValueWithCurrency } from "../utils";
 
 type PropsType = {
   price: {
@@ -23,67 +24,9 @@ type PropsType = {
   }
 };
 
-const format = (value: number): string => (value || 0).toLocaleString("ru-RU");
-
-type FormatNumValuePropsType = {
-  currency: CurrencyType,
-  numValue: NumValueType
-};
-const formatNumValue = (input: FormatNumValuePropsType) => {
-  const { currency, numValue } = input;
-  if (currency === "usd") {
-    return (
-      <div className="value">
-        ${format(numValue.value)}
-        {numValue.delta ? (
-          <span
-            className={classname("delta", {
-              positive: numValue.delta && numValue.delta > 0,
-              negative: numValue.delta && numValue.delta <= 0
-            })}
-          >
-            &nbsp; ({numValue.delta > 0 && `+`}
-            {format(numValue.delta)}
-            {numValue.deltaChar || ""})
-          </span>
-        ) : (
-          ""
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="value">
-      {`${numValue.value} ${currency.toUpperCase()}`}
-      {numValue.delta ? (
-        <span
-          className={classname("delta", {
-            positive: numValue.delta && numValue.delta > 0,
-            negative: numValue.delta && numValue.delta <= 0
-          })}
-        >
-          &nbsp; ({numValue.delta > 0 && `+`}
-          {format(numValue.delta)}
-          {numValue.deltaChar || ""})
-        </span>
-      ) : (
-        ""
-      )}
-    </div>
-  );
-};
-
 const TokenInfo = (props: PropsType) => {
   console.log({ mock });
   const { volume, marketcap } = mock;
-
-  const renderSmth = () => (
-    <div className="subtitle">
-      <span>{volume.btc} BTC</span>
-      <span>{volume.eth} ETH</span>
-    </div>
-  );
 
   return (
     <div className="TokenInfo widget">
@@ -96,7 +39,7 @@ const TokenInfo = (props: PropsType) => {
             <div className={classname("title uppercase", currency)}>
               {currency}
             </div>
-            {formatNumValue({
+            {formatNumValueWithCurrency({
               currency,
               numValue: price
             })}
@@ -105,7 +48,7 @@ const TokenInfo = (props: PropsType) => {
       }, toPairs(mock.price))}
       <div className="row" style={{ marginTop: 20 }}>
         <div className="title">Volume (24h)</div>
-        {formatNumValue({
+        {formatNumValueWithCurrency({
           currency: "usd",
           numValue: volume.usd
         })}
@@ -116,14 +59,14 @@ const TokenInfo = (props: PropsType) => {
       </div>
       <div className="row" style={{ marginTop: 10 }}>
         <div className="title">Market Cap</div>
-        {formatNumValue({
+        {formatNumValueWithCurrency({
           currency: "usd",
           numValue: marketcap.usd
         })}
       </div>
       <div className="subtitle">
-        <span>{format(marketcap.btc.value)} BTC</span>
-        <span>{format(marketcap.eth.value)} ETH</span>
+        <span>{formatNumber(marketcap.btc.value)} BTC</span>
+        <span>{formatNumber(marketcap.eth.value)} ETH</span>
       </div>
     </div>
   );
