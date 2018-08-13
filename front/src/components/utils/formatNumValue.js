@@ -7,7 +7,7 @@ import { formatNumber } from "../utils";
 
 import type { NumValueType } from "../../types";
 
-const formatNumValue = (title: string, numValue: NumValueType): Node => {
+const formatNumValue = (title: ?string, numValue: NumValueType): Node => {
   const { value, delta, deltaChar } = numValue;
   return (
     <div className="row">
