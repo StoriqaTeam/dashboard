@@ -6,6 +6,16 @@ pub struct Config {
     pub transfer_topic: String,
     pub infura: Infura,
     pub http: Http,
+    pub server: Server,
+}
+
+/// Common server settings
+#[derive(Debug, Deserialize, Clone)]
+pub struct Server {
+    pub host: String,
+    pub port: String,
+    pub database: String,
+    pub thread_count: usize,
 }
 
 #[derive(Debug, Deserialize, Clone)]

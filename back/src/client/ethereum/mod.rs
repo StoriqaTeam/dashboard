@@ -1,7 +1,7 @@
 mod responses;
 
-use super::error::{Error, ErrorKind};
 use bigdecimal::{BigDecimal, FromPrimitive};
+use errors::{Error, ErrorKind};
 use failure::Fail;
 use futures::Future;
 use http::request_entity;
