@@ -1,13 +1,16 @@
 mod responses;
 
 use super::error::{Error, ErrorKind};
-use bigdecimal::{BigDecimal, Num};
+use bigdecimal::{BigDecimal, FromPrimitive};
+use failure::Fail;
 use futures::Future;
 use http::request_entity;
 use hyper::Method;
 use models::*;
 use serde::Deserialize;
+use serde_json::Value;
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Arc;
 use types::Client;
 
@@ -31,13 +34,13 @@ impl EthereumClient {
     }
 
     pub fn fetch_current_block_number(&self) -> impl Future<Item = i64, Error = Error> {
-        self.fetch::<BlockNumberResponse>("eth_blockNumber", &HashMap::new())
+        self.fetch::<BlockNumberResponse>("eth_blockNumber", None)
             .and_then(|response| {
                 let hexstr_number = response.result;
                 i64::from_str_radix(&hexstr_number[2..], 16).map_err(|_| {
                     format_err!(
                         "Ethereum block number request: Error parsing block number {} hex string as i64",
-                        hexstr_number
+                        &hexstr_number[2..]
                     ).context(ErrorKind::Deserizalization)
                     .into()
                 })
@@ -49,16 +52,27 @@ impl EthereumClient {
         from_block: Option<u64>,
         to_block: Option<u64>,
     ) -> impl Future<Item = Vec<NewTransaction>, Error = Error> {
-        let mut params = HashMap::new();
-        params.insert("address".to_string(), self.contract_address.clone());
-        params.insert("topics".to_string(), format!("[{}]", self.topic));
-        if let Some(from) = from_block {
-            params.insert("fromBlock".to_string(), from.to_string());
+        let address = self.contract_address.clone();
+        let topics = vec![self.topic.clone()];
+        let mut params = json!({
+            "address": address,
+            "topics": topics,
+        });
+        {
+            let hash_params = params.as_object_mut().unwrap();
+            if let Some(from) = from_block {
+                let hex = format!("0x{:x}", from);
+                hash_params.insert("fromBlock".to_string(), json!(hex));
+            }
+            if let Some(to) = to_block {
+                let hex = format!("0x{:x}", to);
+                hash_params.insert("toBlock".to_string(), json!(hex));
+            }
         }
-        if let Some(to) = to_block {
-            params.insert("toBlock".to_string(), to.to_string());
-        }
-        self.fetch::<LogsResponse>("eth_getLogs", &params)
+        params = json!({
+            "params": vec![params],
+        });
+        self.fetch::<LogsResponse>("eth_getLogs", Some(params))
             .and_then(|response| {
                 let res: Result<Vec<NewTransaction>, Error> =
                     response.result.iter().map(|log| {
@@ -72,21 +86,33 @@ impl EthereumClient {
                             .context(ErrorKind::Deserizalization)
                             .into()
                         );
-                        let block_res: Result<i64, Error> = i64::from_str_radix(&log.block_number[2..], 16).map_err(|_| {
-                            format_err!(
-                                "Ethereum fetch transactions: Error parsing block number `{}` hex string as i64. Log receipt: {:?}",
-                                log.block_number,
-                                &log
+                        let block_res: Result<i64, Error> = i64::from_str_radix(&log.block_number[2..], 16).map_err(|e| {
+                            e.context(
+                                format_err!(
+                                    "Ethereum fetch transactions: Error parsing block number `{}` hex string as i64. Log receipt: {:?}",
+                                    &log.block_number[2..],
+                                    &log
+                                )
                             ).context(ErrorKind::Deserizalization)
                             .into()
                         });
-                        let value_res: Result<BigDecimal, Error> = Num::from_str_radix(&log.data[2..], 16).map_err(|_| {
-                            format_err!(
-                                "Ethereum fetch transactions: Error parsing block number `{}` hex string as BigDecimal. Log receipt: {:?}",
-                                log.data,
-                                &log
+                        // Bigdecimal cannot convert hex strings, only decimals
+                        let value_res: Result<BigDecimal, Error> = u128::from_str_radix(&log.data[2..], 16).map_err(|e| {
+                            e.context(
+                                format_err!(
+                                    "Ethereum fetch transactions: Error parsing transaction value `{}` hex string as BigDecimal. Log receipt: {:?}",
+                                    &log.data[2..],
+                                    &log
+                                )
                             ).context(ErrorKind::Deserizalization)
                             .into()
+                        }).and_then(|number| {
+                            // it's derirable to convert number to bigdecimal rightaway, but
+                            // there's some strange bug using from "u128"
+                            let decimal = format!("{}", number);
+                            BigDecimal::from_str(&decimal).map_err(|e| {
+                                format_err!("Ethereum fetch transactions: Error converting string value {} to `BigDecimal`", number).context(ErrorKind::Deserizalization).into()
+                            })
                         });
                         let from = from_res?;
                         let to = to_res?;
@@ -103,18 +129,32 @@ impl EthereumClient {
             })
     }
 
-    fn fetch<T>(
-        &self,
-        method: &str,
-        args: &HashMap<String, String>,
-    ) -> impl Future<Item = T, Error = Error>
+    fn fetch<T>(&self, method: &str, args: Option<Value>) -> impl Future<Item = T, Error = Error>
     where
         T: for<'a> Deserialize<'a> + 'static,
     {
-        let mut query = args.clone();
-        query.insert("token".to_string(), self.key.clone());
-        let url = format!("https://api.infura.io/v1/jsonrpc/mainnet/{}", method);
-        request_entity(self.client.clone(), &Method::GET, &url, &query, None)
-            .map_err(|e| e.context(ErrorKind::Http).into())
+        let url = format!("https://mainnet.infura.io/v3/{}", &self.key);
+        let args = args.map(|mut json| {
+            let json_clone = json.clone();
+            if let Some(obj) = json.as_object_mut() {
+                obj.insert("method".to_string(), json!(method));
+                obj.insert("id".to_string(), json!(1));
+                obj.insert("jsonrpc".to_string(), json!("2.0"));
+            } else {
+                error!(
+                    "Ethereum client: fetch: args must be an object, but got {}",
+                    json_clone
+                );
+            };
+            json.to_string().as_bytes().to_vec()
+        });
+        request_entity(
+            self.client.clone(),
+            &Method::POST,
+            &url,
+            &HashMap::new(),
+            None,
+            args,
+        ).map_err(|e| e.context(ErrorKind::Http).into())
     }
 }
