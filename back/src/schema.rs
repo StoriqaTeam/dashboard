@@ -9,3 +9,11 @@ table! {
         updated_at -> Timestamp,
     }
 }
+
+table! {
+    capitalization (id) {
+        id -> Integer,
+        time -> Timestamp,
+        value -> Double,
+    }
+}

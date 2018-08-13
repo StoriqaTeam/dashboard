@@ -19,30 +19,39 @@ extern crate diesel;
 extern crate diesel_derive;
 extern crate r2d2;
 extern crate r2d2_diesel;
+#[macro_use]
+extern crate stq_http;
+extern crate chrono;
+extern crate stq_logging;
+extern crate stq_router;
 
+mod application;
 mod client;
 pub mod config;
+mod controller;
 mod environment;
+mod errors;
 mod http;
 mod models;
+mod repos;
 mod schema;
+mod services;
 mod types;
 
-
-use r2d2_diesel::ConnectionManager;
 use diesel::pg::PgConnection;
 use futures_cpupool::CpuPool;
+use r2d2_diesel::ConnectionManager;
 
 use self::config::Config;
 use self::environment::Environment;
 use failure::Fail;
 use futures::Future;
 
+use hyper::rt;
+use hyper::Server;
 
-use hyper::{Body, Response, Server};
-use hyper::service::service_fn_ok;
-use hyper::rt::{self, Future as HyperFuture};
-
+use application::Application;
+use errors::Error;
 
 pub fn current_block_number(config: Config) {
     let env = Environment::new(config.clone());
@@ -58,20 +67,31 @@ pub fn current_block_number(config: Config) {
     };
 
     // Prepare database pool
-    let database_url: String = config.server.database.parse().expect("Database URL must be set in configuration");
+    let database_url: String = config
+        .server
+        .database
+        .parse()
+        .expect("Database URL must be set in configuration");
     let manager = ConnectionManager::<PgConnection>::new(database_url);
-    let db_pool = r2d2::Pool::builder().build(manager).expect("Failed to create connection pool");
+    let db_pool = r2d2::Pool::builder()
+        .build(manager)
+        .expect("Failed to create connection pool");
+    // Prepare CPU pool
+    let cpu_pool = CpuPool::new(thread_count);
 
+    let new_service = move || {
+        let controller =
+            controller::ControllerImpl::new(db_pool.clone(), cpu_pool.clone(), config.clone());
 
-    let new_service = || {
-        service_fn_ok(|_| {
-            Response::new(Body::from("hello world"))
-        })
+        // Prepare application
+        let app = Application::<Error>::new(controller);
+
+        Ok(app) as Result<Application<Error>, hyper::Error>
     };
 
-    let server = Server::bind(&address)
-        .serve(new_service)
-        .map_err(|e| eprintln!("server error: {}", e));
+    let server = Server::bind(&address).serve(new_service).map_err(|e| {
+        log_error(&e);
+    });
 
     rt::run(server);
 

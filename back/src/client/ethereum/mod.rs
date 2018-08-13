@@ -1,6 +1,6 @@
 mod responses;
 
-use super::error::{Error, ErrorKind};
+use errors::{Error, ErrorKind};
 use futures::Future;
 use http::request_entity;
 use hyper::Method;
