@@ -98,8 +98,11 @@ impl<
 {
     /// Handle a request and get future response
     fn call(&self, req: Request<Body>) -> ControllerFuture {
-        let capitalizatoin_service =
-            CapitalizationServiceImpl::new(self.db_pool.clone(), self.cpu_pool.clone());
+        let capitalizatoin_service = CapitalizationServiceImpl::new(
+            self.db_pool.clone(),
+            self.cpu_pool.clone(),
+            self.config.http.dns_threads,
+        );
         let uri = req.uri();
 
         let path = uri.path();
