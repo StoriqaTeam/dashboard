@@ -13,9 +13,13 @@ table! {
 }
 
 table! {
-    capitalization (id) {
+    coin_market_cap_values (id) {
         id -> Integer,
         time -> Timestamp,
-        value -> Double,
+        capitalization -> BigInt,
+        price_btc -> Double,
+        price_usd -> Double,
+        price_eth -> Double,
+        volume_usd -> BigInt,
     }
 }

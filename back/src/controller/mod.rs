@@ -28,7 +28,7 @@ use stq_router::RouteParser;
 use self::routes::Route;
 use config::Config;
 use errors::ErrorKind;
-use services::capitalization::{CapitalizationService, CapitalizationServiceImpl};
+use services::coinmarketcap::{CoinMarketCapsService, CoinMarketCapsServiceImpl};
 
 pub type ControllerFuture = Box<Future<Item = Body, Error = failure::Error> + Send>;
 
@@ -99,7 +99,7 @@ impl<
 {
     /// Handle a request and get future response
     fn call(&self, req: Request<Body>) -> ControllerFuture {
-        let capitalizatoin_service = CapitalizationServiceImpl::new(
+        let capitalizatoin_service = CoinMarketCapsServiceImpl::new(
             self.db_pool.clone(),
             self.cpu_pool.clone(),
             self.config.http.dns_threads,
