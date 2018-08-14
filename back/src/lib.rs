@@ -23,6 +23,7 @@ extern crate r2d2_diesel;
 #[macro_use]
 extern crate stq_http;
 extern crate chrono;
+extern crate rand;
 extern crate stq_logging;
 extern crate stq_router;
 
@@ -40,20 +41,24 @@ mod schema;
 mod services;
 mod types;
 
+use std::thread;
+use std::time::{Duration, Instant};
+
 use diesel::pg::PgConnection;
+use failure::Fail;
+use futures::Future;
 use futures_cpupool::CpuPool;
+use hyper::rt;
+use hyper::Server;
 use r2d2_diesel::ConnectionManager;
+use tokio::prelude::*;
+use tokio::timer::Interval;
 
 use self::config::Config;
 use self::environment::Environment;
-use failure::Fail;
-use futures::Future;
-
-use hyper::rt;
-use hyper::Server;
-
 use application::Application;
 use errors::Error;
+use services::coinmarketcap::{CoinMarketCapsService, CoinMarketCapsServiceImpl};
 
 pub fn start_server(config: Config) {
     // Prepare server
@@ -123,6 +128,41 @@ pub fn print_transactions(config: Config, from: Option<u64>, to: Option<u64>) {
             log_error(&e);
         });
     tokio::run(future);
+}
+
+pub fn fetch_coinmarketcap(config: Config) {
+    // Prepare server
+    let thread_count = config.server.thread_count;
+    // Prepare database pool
+    let database_url: String = config
+        .server
+        .database
+        .parse()
+        .expect("Database URL must be set in configuration");
+    let manager = ConnectionManager::<PgConnection>::new(database_url);
+    let db_pool = r2d2::Pool::builder()
+        .build(manager)
+        .expect("Failed to create connection pool");
+    // Prepare CPU pool
+    let cpu_pool = CpuPool::new(thread_count);
+
+    let capitalizatoin_service =
+        CoinMarketCapsServiceImpl::new(db_pool.clone(), cpu_pool.clone(), config.http.dns_threads);
+
+    let task = Interval::new(Instant::now(), Duration::from_secs(15))
+        .for_each(move |_| {
+            let random_time = 10f64 * rand::random::<f64>();
+            let duration = Duration::from_secs(random_time as u64);
+            thread::sleep(duration);
+
+            capitalizatoin_service
+                .fetch_more()
+                .wait()
+                .map(|_| ())
+                .map_err(|e| panic!("coinmarketcap service failed; err={:?}", e))
+        }).map_err(|e| panic!("interval errored; err={:?}", e));
+
+    tokio::run(task);
 }
 
 fn log_error(e: &Fail) {
