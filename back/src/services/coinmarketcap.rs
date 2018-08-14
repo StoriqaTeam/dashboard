@@ -16,6 +16,7 @@ use hyper::Client as HyperClient;
 use hyper::Method;
 use hyper_tls::HttpsConnector;
 use r2d2::{ManageConnection, Pool};
+use tokio_core::reactor::Core;
 
 use super::types::ServiceFuture;
 use errors::ErrorKind;
@@ -76,8 +77,7 @@ impl<
                             let capitalization_repo = CoinMarketCapsRepoImpl::new(&*conn);
                             capitalization_repo.list(from, to)
                         })
-                })
-                .map_err(|e| {
+                }).map_err(|e| {
                     e.context("Service CoinMarketCapsService, get endpoint error occured.")
                         .into()
                 }),
@@ -112,14 +112,14 @@ impl<
                                     } else {
                                         let from = DateTime::<Utc>::from_utc(
                                             NaiveDateTime::new(
-                                                NaiveDate::from_ymd(2018, 03, 1),
+                                                NaiveDate::from_ymd(2018, 06, 14),
                                                 NaiveTime::from_hms(0, 0, 0),
                                             ),
                                             Utc,
                                         );
                                         let to = DateTime::<Utc>::from_utc(
                                             NaiveDateTime::new(
-                                                NaiveDate::from_ymd(2018, 03, 2),
+                                                NaiveDate::from_ymd(2018, 06, 15),
                                                 NaiveTime::from_hms(0, 0, 0),
                                             ),
                                             Utc,
@@ -129,16 +129,20 @@ impl<
 
                                     if let Some((from, to)) = from_to {
                                         let mut query = HashMap::new();
-                                        let url = format!("https://graphs2.coinmarketcap.com/currencies/storiqa/{}/{}/", from.timestamp(), to.timestamp());
-                                        request_entity::<CoinMarketCap>(
+                                        let url = format!("https://graphs2.coinmarketcap.com/currencies/storiqa/{}/{}/", from.timestamp() * 1000, to.timestamp() * 1000);
+                                        debug!("url = {}", url);
+                                        let mut core = Core::new().unwrap();
+                                        core.run(request_entity::<CoinMarketCap>(
                                             client,
                                             &Method::GET,
                                             &url,
                                             &query,
                                             None,
                                             None,
-                                        ).map_err(|e| e.context(ErrorKind::Http).into())
-                                            .wait()
+                                        ).map_err(|e| {
+                                                e.context(ErrorKind::Http).into()
+                                            }))
+
                                     } else {
                                         Ok(CoinMarketCap::default())
                                     }
@@ -147,7 +151,7 @@ impl<
                         })
                 })
                 .map_err(|e| {
-                    e.context("Service CoinMarketCapsService, get endpoint error occured.")
+                    e.context("Service CoinMarketCapsService, fetch_more endpoint error occured.")
                         .into()
                 }),
         )

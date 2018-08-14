@@ -77,6 +77,9 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
         query_store
             .get_results::<Transaction>(self.db_conn)
             .map_err(From::from)
-            .map_err(|e: FailureError| e.context(format!("Create new caps error occured.")).into())
+            .map_err(|e: FailureError| {
+                e.context(format!("Create new transactions error occured."))
+                    .into()
+            })
     }
 }

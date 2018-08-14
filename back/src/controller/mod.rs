@@ -54,8 +54,7 @@ unsafe impl<T, M> Send for ControllerImpl<T, M>
 where
     T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager> + 'static,
     M: ManageConnection<Connection = T>,
-{
-}
+{}
 
 impl<
         T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager> + 'static,
@@ -109,8 +108,8 @@ impl<
         let path = uri.path();
 
         match (&req.method().clone(), self.route_parser.test(&path)) {
-            // GET /capitalization
-            (&Method::GET, Some(Route::Capitalization)) => {
+            // GET /coinmarketcap
+            (&Method::GET, Some(Route::CoinMarketCap)) => {
                 if let (Some(from), Some(to)) = parse_query!(uri.query().unwrap_or_default(), "from" => DateTime<Utc>, "to" => DateTime<Utc>)
                 {
                     debug!(
@@ -134,7 +133,7 @@ impl<
                     m,
                     path
                 ).context(ErrorKind::NotFound)
-                    .into(),
+                .into(),
             )),
         }
     }
