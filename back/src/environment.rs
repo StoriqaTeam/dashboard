@@ -1,5 +1,5 @@
 use super::config::Config;
-use client::EthereumClient;
+use clients::EthereumClient;
 use hyper::Client as HyperClient;
 use hyper_tls::HttpsConnector;
 use std::sync::Arc;
@@ -19,9 +19,9 @@ impl Environment {
         let client = Arc::new(HyperClient::builder().build(connector));
         let ethereum_client = EthereumClient::new(
             client.clone(),
-            config.infura.key.clone(),
-            config.transfer_topic.clone(),
-            config.contract_address.clone(),
+            config.ethereum.api_key.clone(),
+            config.ethereum.transfer_topic.clone(),
+            config.ethereum.contract_address.clone(),
         );
 
         Environment {

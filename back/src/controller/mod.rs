@@ -54,7 +54,8 @@ unsafe impl<T, M> Send for ControllerImpl<T, M>
 where
     T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager> + 'static,
     M: ManageConnection<Connection = T>,
-{}
+{
+}
 
 impl<
         T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager> + 'static,
@@ -133,7 +134,7 @@ impl<
                     m,
                     path
                 ).context(ErrorKind::NotFound)
-                .into(),
+                    .into(),
             )),
         }
     }

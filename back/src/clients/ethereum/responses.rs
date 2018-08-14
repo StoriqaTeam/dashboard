@@ -15,4 +15,6 @@ pub struct Log {
     pub topics: Vec<String>,
     pub data: String,
     pub block_number: String,
+    pub block_hash: String,
+    pub transaction_hash: String,
 }

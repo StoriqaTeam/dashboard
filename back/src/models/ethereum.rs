@@ -18,6 +18,8 @@ pub struct Transaction {
     pub to_address: TokenAddress,
     pub block: i64,
     pub value: BigDecimal,
+    pub block_hash: String,
+    pub transaction_hash: String,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
 }
@@ -29,4 +31,6 @@ pub struct NewTransaction {
     pub to_address: TokenAddress,
     pub block: i64,
     pub value: BigDecimal,
+    pub block_hash: String,
+    pub transaction_hash: String,
 }

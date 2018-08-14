@@ -1,6 +1,6 @@
 mod responses;
 
-use bigdecimal::{BigDecimal, FromPrimitive};
+use bigdecimal::BigDecimal;
 use errors::{Error, ErrorKind};
 use failure::Fail;
 use futures::Future;
@@ -74,8 +74,10 @@ impl EthereumClient {
         });
         self.fetch::<LogsResponse>("eth_getLogs", Some(params))
             .and_then(|response| {
-                let res: Result<Vec<NewTransaction>, Error> =
-                    response.result.iter().map(|log| {
+                let res: Result<Vec<NewTransaction>, Error> = response
+                    .result
+                    .iter()
+                    .map(|log| {
                         let from_res: Result<String, Error> = log.topics.get(1).cloned().ok_or(
                             format_err!("Ethereum fetch transactions: Error getting topic at index 1 (`from_address`). Log receipt: {:?}", &log)
                             .context(ErrorKind::Deserizalization)
@@ -86,8 +88,12 @@ impl EthereumClient {
                             .context(ErrorKind::Deserizalization)
                             .into()
                         );
-                        let block_res: Result<i64, Error> = i64::from_str_radix(&log.block_number[2..], 16).map_err(|e| {
-                            e.context(
+                        let block_res: Result<i64, Error> = i64::from_str_radix(
+                            &log.block_number[2..],
+                            16,
+                        ).map_err(
+                            |e| {
+                                e.context(
                                 format_err!(
                                     "Ethereum fetch transactions: Error parsing block number `{}` hex string as i64. Log receipt: {:?}",
                                     &log.block_number[2..],
@@ -95,9 +101,13 @@ impl EthereumClient {
                                 )
                             ).context(ErrorKind::Deserizalization)
                             .into()
-                        });
+                            },
+                        );
                         // Bigdecimal cannot convert hex strings, only decimals
-                        let value_res: Result<BigDecimal, Error> = u128::from_str_radix(&log.data[2..], 16).map_err(|e| {
+                        let value_res: Result<BigDecimal, Error> = u128::from_str_radix(
+                            &log.data[2..],
+                            16,
+                        ).map_err(|e| {
                             e.context(
                                 format_err!(
                                     "Ethereum fetch transactions: Error parsing transaction value `{}` hex string as BigDecimal. Log receipt: {:?}",
@@ -106,14 +116,17 @@ impl EthereumClient {
                                 )
                             ).context(ErrorKind::Deserizalization)
                             .into()
-                        }).and_then(|number| {
-                            // it's derirable to convert number to bigdecimal rightaway, but
-                            // there's some strange bug using from "u128"
-                            let decimal = format!("{}", number);
-                            BigDecimal::from_str(&decimal).map_err(|e| {
-                                format_err!("Ethereum fetch transactions: Error converting string value {} to `BigDecimal`", number).context(ErrorKind::Deserizalization).into()
-                            })
-                        });
+                        })
+                            .and_then(|number| {
+                                // it's derirable to convert number to bigdecimal rightaway, but
+                                // there's some strange bug using from "u128"
+                                let decimal = format!("{}", number);
+                                BigDecimal::from_str(&decimal).map_err(|e| {
+                                    e.context(
+                                    format_err!("Ethereum fetch transactions: Error converting string value {} to `BigDecimal`", number)
+                                ).context(ErrorKind::Deserizalization).into()
+                                })
+                            });
                         let from = from_res?;
                         let to = to_res?;
                         let block = block_res?;
@@ -122,9 +135,12 @@ impl EthereumClient {
                             from_address: TokenAddress::new(from.to_string()),
                             to_address: TokenAddress::new(to.to_string()),
                             block,
-                            value
+                            value,
+                            block_hash: log.block_hash.clone(),
+                            transaction_hash: log.transaction_hash.clone(),
                         })
-                    }).collect();
+                    })
+                    .collect();
                 res
             })
     }
