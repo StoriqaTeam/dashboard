@@ -42,8 +42,7 @@ impl<E: Fail + Codeable + PayloadCarrier> Service for Application<E> {
                         Ok(data) => future::ok(Self::response_with_json(data)),
                         Err(err) => future::ok(Self::response_with_error(&err)),
                     }
-                })
-                .inspect(|resp| debug!("Sending response: {:?}", resp)),
+                }).inspect(|resp| debug!("Sending response: {:?}", resp)),
         )
     }
 }

@@ -60,8 +60,7 @@ pub fn request_bytes(
             .fold(Vec::new(), |mut acc, chunk| {
                 acc.extend_from_slice(&*chunk);
                 future::ok::<_, hyper::Error>(acc)
-            })
-            .map_err(|e| e.context(ErrorKind::HttpBody).into())
+            }).map_err(|e| e.context(ErrorKind::HttpBody).into())
     })
 }
 
@@ -74,9 +73,10 @@ pub fn request(
     body: Option<Vec<u8>>,
 ) -> impl Future<Item = Response<Body>, Error = Error> {
     future::result(build_request(method, path, &query, auth_header, body)).and_then(move |req| {
-        client
-            .request(req)
-            .map_err(|e| e.context(ErrorKind::Http).into())
+        client.request(req).map_err(|e| {
+            error!("Fetch error = {}", e);
+            e.context(ErrorKind::Http).into()
+        })
     })
 }
 

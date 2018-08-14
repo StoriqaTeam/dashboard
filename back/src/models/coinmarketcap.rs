@@ -1,6 +1,9 @@
 //! Models for managing capitalization
-use schema::coin_market_cap_values;
 use std::time::SystemTime;
+
+use chrono::{TimeZone, Utc};
+
+use schema::coin_market_cap_values;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
 pub struct CoinMarketCapValue {
@@ -36,7 +39,7 @@ pub struct CoinMarketCap {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Capintalization {
     #[serde(rename = "0")]
-    pub time: SystemTime,
+    pub time: i64,
     #[serde(rename = "1")]
     pub value: i64,
 }
@@ -44,7 +47,7 @@ pub struct Capintalization {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Price {
     #[serde(rename = "0")]
-    pub time: SystemTime,
+    pub time: i64,
     #[serde(rename = "1")]
     pub value: f64,
 }
@@ -52,7 +55,7 @@ pub struct Price {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Volume {
     #[serde(rename = "0")]
-    pub time: SystemTime,
+    pub time: i64,
     #[serde(rename = "1")]
     pub value: i64,
 }
@@ -61,7 +64,7 @@ impl CoinMarketCap {
     pub fn to_vec(self) -> Vec<NewCoinMarketCapValue> {
         let mut res = vec![];
         for (i, cap) in self.market_cap_by_available_supply.into_iter().enumerate() {
-            let time = cap.time;
+            let time = Utc.timestamp(cap.time / 1000, 0).into();
             let capitalization = cap.value;
             let price_btc = self.price_btc[i].value;
             let price_usd = self.price_usd[i].value;
