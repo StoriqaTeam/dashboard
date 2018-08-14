@@ -6,6 +6,18 @@ authors = ["Alexey Karasev <karasev.alexey@gmail.com>"]
 [lib]
 name = "dashboard_core"
 
+[[bin]]
+name="server"
+path="src/server.rs"
+
+[[bin]]
+name="coinmarketcap_fetcher"
+path="src/coinmarketcap_fetcher.rs"
+
+[[bin]]
+name="transactions"
+path="src/transactions.rs"
+
 [dependencies]
 config = "0.9"
 serde = "1.0"
@@ -28,3 +40,4 @@ stq_http = { path = "vendor/libstqbackend/http" }
 stq_router = { path = "vendor/libstqbackend/router" }
 stq_logging = { path = "vendor/libstqbackend/logging" }
 chrono = "0.4"
+rand = "0.5"
