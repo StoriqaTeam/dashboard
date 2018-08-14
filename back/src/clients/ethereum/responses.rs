@@ -8,7 +8,7 @@ pub struct LogsResponse {
     pub result: Vec<Log>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Log {
     pub address: String,
