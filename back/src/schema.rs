@@ -5,6 +5,8 @@ table! {
         to_address -> VarChar,
         block -> BigInt,
         value -> Numeric,
+        block_hash -> VarChar,
+        transaction_hash -> VarChar,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

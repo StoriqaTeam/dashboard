@@ -76,7 +76,8 @@ impl<
                             let capitalization_repo = CapitalizationRepoImpl::new(&*conn);
                             capitalization_repo.list(from, to)
                         })
-                }).map_err(|e| {
+                })
+                .map_err(|e| {
                     e.context("Service CapitalizationService, get endpoint error occured.")
                         .into()
                 }),
@@ -95,40 +96,57 @@ impl<
                         .map_err(|e| e.context(ErrorKind::Connection).into())
                         .and_then(move |conn| {
                             let capitalization_repo = CapitalizationRepoImpl::new(&*conn);
-                            capitalization_repo.last()
-                            .and_then(
-                                |last| {
-                                    let from_to =
-                                        if let Some(last) = last {
-                                            let duration = SystemTime::now().duration_since(last.time).unwrap();
-                                            if duration.as_secs() > 600 {
-                                                let from: DateTime<Utc> = last.time.into();
-                                                let to: DateTime<Utc> = from + Duration::days(1);
-                                                Some((from, to))
-                                            } else {
-                                                None
-                                            }
-                                        } else {
-                                            let from = DateTime::<Utc>::from_utc(NaiveDateTime::new(NaiveDate::from_ymd(2018, 03, 1), NaiveTime::from_hms(0, 0, 0)), Utc);
-                                            let to = DateTime::<Utc>::from_utc(NaiveDateTime::new(NaiveDate::from_ymd(2018, 03, 2), NaiveTime::from_hms(0, 0, 0)), Utc);
+                            capitalization_repo
+                                .last()
+                                .and_then(|last| {
+                                    let from_to = if let Some(last) = last {
+                                        let duration =
+                                            SystemTime::now().duration_since(last.time).unwrap();
+                                        if duration.as_secs() > 600 {
+                                            let from: DateTime<Utc> = last.time.into();
+                                            let to: DateTime<Utc> = from + Duration::days(1);
                                             Some((from, to))
-                                        };
+                                        } else {
+                                            None
+                                        }
+                                    } else {
+                                        let from = DateTime::<Utc>::from_utc(
+                                            NaiveDateTime::new(
+                                                NaiveDate::from_ymd(2018, 03, 1),
+                                                NaiveTime::from_hms(0, 0, 0),
+                                            ),
+                                            Utc,
+                                        );
+                                        let to = DateTime::<Utc>::from_utc(
+                                            NaiveDateTime::new(
+                                                NaiveDate::from_ymd(2018, 03, 2),
+                                                NaiveTime::from_hms(0, 0, 0),
+                                            ),
+                                            Utc,
+                                        );
+                                        Some((from, to))
+                                    };
 
                                     if let Some((from, to)) = from_to {
                                         let mut query = HashMap::new();
                                         let url = format!("https://graphs2.coinmarketcap.com/currencies/storiqa/{}/{}/", from.timestamp(), to.timestamp());
-                                        request_entity::<Vec<CoinMarketCap>>(client, &Method::GET, &url, &query, None, None)
-                                            .map_err(|e| e.context(ErrorKind::Http).into())
+                                        request_entity::<Vec<CoinMarketCap>>(
+                                            client,
+                                            &Method::GET,
+                                            &url,
+                                            &query,
+                                            None,
+                                            None,
+                                        ).map_err(|e| e.context(ErrorKind::Http).into())
                                             .wait()
                                     } else {
                                         Ok(vec![])
                                     }
-                            })
-                            .and_then(|caps| {
-                                capitalization_repo.add(caps)
-                            })
+                                })
+                                .and_then(|caps| capitalization_repo.add(caps))
                         })
-                }).map_err(|e| {
+                })
+                .map_err(|e| {
                     e.context("Service CapitalizationService, get endpoint error occured.")
                         .into()
                 }),

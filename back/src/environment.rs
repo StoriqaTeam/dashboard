@@ -1,5 +1,5 @@
 use super::config::Config;
-use client::EthereumClient;
+use clients::EthereumClient;
 use hyper::Client as HyperClient;
 use hyper_tls::HttpsConnector;
 use std::sync::Arc;
