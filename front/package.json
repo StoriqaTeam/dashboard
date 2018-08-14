@@ -23,6 +23,7 @@
     "parcel-bundler": "^1.9.7"
   },
   "scripts": {
-    "start": "yarn parcel ./src/index.html"
+    "start": "yarn parcel ./src/index.html",
+    "prod": "rm -rf ./dist && yarn parcel build ./src/index.js && cp ./public/index.html ./dist/index.html"
   }
 }
