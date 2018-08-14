@@ -16,6 +16,7 @@ use types::Client;
 
 use self::responses::*;
 
+#[derive(Clone)]
 pub struct EthereumClient {
     client: Arc<Client>,
     key: String,
@@ -49,8 +50,8 @@ impl EthereumClient {
 
     pub fn fetch_transactions(
         &self,
-        from_block: Option<u64>,
-        to_block: Option<u64>,
+        from_block: Option<i64>,
+        to_block: Option<i64>,
     ) -> impl Future<Item = Vec<NewTransaction>, Error = Error> {
         let address = self.contract_address.clone();
         let topics = vec![self.topic.clone()];

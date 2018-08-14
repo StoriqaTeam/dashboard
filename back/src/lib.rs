@@ -45,9 +45,13 @@ mod types;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use diesel::pg::PgConnection;
+use self::config::Config;
+use self::environment::Environment;
+use self::fetchers::EthereumFetcher;
 use failure::Fail;
-use futures::Future;
+use futures::{Future, Stream};
+
+use diesel::pg::PgConnection;
 use futures_cpupool::CpuPool;
 use hyper::rt;
 use hyper::Server;
@@ -55,8 +59,6 @@ use r2d2_diesel::ConnectionManager;
 use tokio::prelude::*;
 use tokio::timer::Interval;
 
-use self::config::Config;
-use self::environment::Environment;
 use application::Application;
 use errors::Error;
 use services::coinmarketcap::{CoinMarketCapsService, CoinMarketCapsServiceImpl};
@@ -115,7 +117,7 @@ pub fn print_current_block_number(config: Config) {
     tokio::run(future);
 }
 
-pub fn print_transactions(config: Config, from: Option<u64>, to: Option<u64>) {
+pub fn print_transactions(config: Config, from: Option<i64>, to: Option<i64>) {
     let env = Environment::new(config);
     let future = env
         .ethereum_client
@@ -128,6 +130,19 @@ pub fn print_transactions(config: Config, from: Option<u64>, to: Option<u64>) {
         }).map_err(|e| {
             log_error(&e);
         });
+    tokio::run(future);
+}
+
+pub fn start_ethereum_fetcher(config: Config) {
+    let environment = Environment::new(config);
+    let fetcher = EthereumFetcher::new(environment);
+    let stream = fetcher.start();
+    let future = stream
+        .or_else(|e| {
+            log_error(&e);
+            futures::future::ok(())
+        })
+        .for_each(|_| futures::future::ok(()));
     tokio::run(future);
 }
 

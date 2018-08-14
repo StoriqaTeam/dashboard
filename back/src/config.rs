@@ -24,6 +24,7 @@ pub struct Ethereum {
     pub transfer_topic: String,
     pub api_key: String,
     pub fetcher_tick_seconds: usize,
+    pub blocks_per_fetch: i64,
 }
 
 #[derive(Debug, Deserialize, Clone)]

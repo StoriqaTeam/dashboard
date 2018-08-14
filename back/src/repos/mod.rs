@@ -5,4 +5,5 @@ pub mod transactions;
 pub mod types;
 
 pub use self::coinmarketcap::*;
+pub use self::transactions::*;
 pub use self::types::*;
