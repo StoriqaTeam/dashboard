@@ -1,9 +1,8 @@
 use futures::prelude::*;
 
 pub struct Ethereum {
-    busy: boolean,
-    
-};
+    busy: bool,
+}
 
 impl Ethereum {
     fn new() {

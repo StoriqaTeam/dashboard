@@ -2,9 +2,7 @@ use config_crate::{Config as RawConfig, ConfigError, Environment, File};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
-    pub contract_address: String,
-    pub transfer_topic: String,
-    pub infura: Infura,
+    pub ethereum: Ethereum,
     pub http: Http,
     pub server: Server,
 }
@@ -19,8 +17,11 @@ pub struct Server {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct Infura {
-    pub key: String,
+pub struct Ethereum {
+    pub contract_address: String,
+    pub transfer_topic: String,
+    pub api_key: String,
+    pub fetcher_tick_seconds: usize,
 }
 
 #[derive(Debug, Deserialize, Clone)]
