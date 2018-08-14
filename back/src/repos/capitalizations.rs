@@ -14,10 +14,10 @@ use failure::Error as FailureError;
 
 use super::types::RepoResult;
 use models::{Capitalization, CoinMarketCap};
-use schema::capitalization::dsl::*;
+use schema::capitalizations::dsl::*;
 
 /// Capitalization repository for handling Capitalization
-pub trait CapitalizationRepo {
+pub trait CapitalizationsRepo {
     /// Returns capitalization for specific period
     fn list(&self, from: SystemTime, to: SystemTime) -> RepoResult<Vec<Capitalization>>;
     /// Returns last value
@@ -27,7 +27,7 @@ pub trait CapitalizationRepo {
 }
 
 /// Implementation of Capitalization trait
-pub struct CapitalizationRepoImpl<
+pub struct CapitalizationsRepoImpl<
     'a,
     T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager> + 'static,
 > {
@@ -35,7 +35,7 @@ pub struct CapitalizationRepoImpl<
 }
 
 impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager> + 'static>
-    CapitalizationRepoImpl<'a, T>
+    CapitalizationsRepoImpl<'a, T>
 {
     pub fn new(db_conn: &'a T) -> Self {
         Self { db_conn }
@@ -43,11 +43,11 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
 }
 
 impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager> + 'static>
-    CapitalizationRepo for CapitalizationRepoImpl<'a, T>
+    CapitalizationsRepo for CapitalizationsRepoImpl<'a, T>
 {
     /// Returns capitalization for specific period
     fn list(&self, from: SystemTime, to: SystemTime) -> RepoResult<Vec<Capitalization>> {
-        let query = capitalization
+        let query = capitalizations
             .filter(time.ge(from))
             .filter(time.le(to))
             .order(time);
@@ -62,7 +62,7 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
 
     /// Returns last value
     fn last(&self) -> RepoResult<Option<Capitalization>> {
-        let query = capitalization.order(time.desc()).limit(1);
+        let query = capitalizations.order(time.desc()).limit(1);
         query
             .get_result::<Capitalization>(self.db_conn)
             .optional()
@@ -76,7 +76,7 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
     /// Add new value
     fn add(&self, new_caps: Vec<CoinMarketCap>) -> RepoResult<Vec<Capitalization>> {
         debug!("Create new caps {:?}.", new_caps);
-        let query_store = diesel::insert_into(capitalization).values(&new_caps);
+        let query_store = diesel::insert_into(capitalizations).values(&new_caps);
         query_store
             .get_results::<Capitalization>(self.db_conn)
             .map_err(From::from)

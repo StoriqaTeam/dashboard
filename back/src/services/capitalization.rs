@@ -21,7 +21,7 @@ use super::types::ServiceFuture;
 use errors::ErrorKind;
 use http::*;
 use models::{Capitalization, CoinMarketCap};
-use repos::{CapitalizationRepo, CapitalizationRepoImpl};
+use repos::{CapitalizationsRepo, CapitalizationsRepoImpl};
 use types::Client;
 
 pub trait CapitalizationService {
@@ -73,7 +73,7 @@ impl<
                         .get()
                         .map_err(|e| e.context(ErrorKind::Connection).into())
                         .and_then(move |conn| {
-                            let capitalization_repo = CapitalizationRepoImpl::new(&*conn);
+                            let capitalization_repo = CapitalizationsRepoImpl::new(&*conn);
                             capitalization_repo.list(from, to)
                         })
                 }).map_err(|e| {
@@ -94,7 +94,7 @@ impl<
                         .get()
                         .map_err(|e| e.context(ErrorKind::Connection).into())
                         .and_then(move |conn| {
-                            let capitalization_repo = CapitalizationRepoImpl::new(&*conn);
+                            let capitalization_repo = CapitalizationsRepoImpl::new(&*conn);
                             capitalization_repo.last()
                             .and_then(
                                 |last| {

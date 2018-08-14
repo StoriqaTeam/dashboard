@@ -11,7 +11,7 @@ table! {
 }
 
 table! {
-    capitalization (id) {
+    capitalizations (id) {
         id -> Integer,
         time -> Timestamp,
         value -> Double,
