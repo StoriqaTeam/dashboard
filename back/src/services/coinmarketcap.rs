@@ -21,15 +21,17 @@ use tokio_core::reactor::Core;
 use super::types::ServiceFuture;
 use errors::ErrorKind;
 use http::*;
-use models::{CoinMarketCap, CoinMarketCapValue};
+use models::{CoinMarketCap, CoinMarketCapValue, CoinMarketCapValueExt};
 use repos::{CoinMarketCapsRepo, CoinMarketCapsRepoImpl};
 use types::Client;
 
 pub trait CoinMarketCapsService {
-    /// Returns list of user_delivery_address
+    /// Returns coinmarketcap history
     fn get(&self, from: SystemTime, to: SystemTime) -> ServiceFuture<Vec<CoinMarketCapValue>>;
     /// Fetches more data from coinmarketcap
     fn fetch_more(&self) -> ServiceFuture<Vec<CoinMarketCapValue>>;
+    /// Fetches last coinmarketcap data
+    fn last(&self) -> ServiceFuture<CoinMarketCapValueExt>;
 }
 
 /// UserDeliveryAddress services, responsible for UserDeliveryAddress-related CRUD operations
@@ -112,14 +114,14 @@ impl<
                                     } else {
                                         let from = DateTime::<Utc>::from_utc(
                                             NaiveDateTime::new(
-                                                NaiveDate::from_ymd(2018, 06, 14),
+                                                NaiveDate::from_ymd(2018, 03, 14),
                                                 NaiveTime::from_hms(0, 0, 0),
                                             ),
                                             Utc,
                                         );
                                         let to = DateTime::<Utc>::from_utc(
                                             NaiveDateTime::new(
-                                                NaiveDate::from_ymd(2018, 06, 15),
+                                                NaiveDate::from_ymd(2018, 03, 15),
                                                 NaiveTime::from_hms(0, 0, 0),
                                             ),
                                             Utc,
@@ -152,6 +154,41 @@ impl<
                 })
                 .map_err(|e| {
                     e.context("Service CoinMarketCapsService, fetch_more endpoint error occured.")
+                        .into()
+                }),
+        )
+    }
+
+    /// Fetches last coinmarketcap data
+    fn last(&self) -> ServiceFuture<CoinMarketCapValueExt> {
+        let db_pool = self.db_pool.clone();
+        Box::new(
+            self.cpu_pool
+                .spawn_fn(move || {
+                    db_pool
+                        .get()
+                        .map_err(|e| e.context(ErrorKind::Connection).into())
+                        .and_then(move |conn| {
+                            let capitalization_repo = CoinMarketCapsRepoImpl::new(&*conn);
+                            capitalization_repo.last().and_then(|last| {
+                                if let Some(last) = last {
+                                    let from: DateTime<Utc> = last.time.into();
+                                    let to: DateTime<Utc> = from - Duration::days(1);
+                                    capitalization_repo
+                                        .list(from.into(), to.into())
+                                        .map(|list| {
+                                            CoinMarketCapValueExt::new(
+                                                last,
+                                                list.into_iter().nth(0).unwrap_or_default(),
+                                            )
+                                        })
+                                } else {
+                                    return Err(format_err!("No data!"));
+                                }
+                            })
+                        })
+                }).map_err(|e| {
+                    e.context("Service CoinMarketCapsService, last endpoint error occured.")
                         .into()
                 }),
         )
