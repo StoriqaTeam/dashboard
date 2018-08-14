@@ -20,19 +20,19 @@ use r2d2::{ManageConnection, Pool};
 use super::types::ServiceFuture;
 use errors::ErrorKind;
 use http::*;
-use models::{Capitalization, CoinMarketCap};
-use repos::{CapitalizationsRepo, CapitalizationsRepoImpl};
+use models::{CoinMarketCap, CoinMarketCapValue};
+use repos::{CoinMarketCapsRepo, CoinMarketCapsRepoImpl};
 use types::Client;
 
-pub trait CapitalizationService {
+pub trait CoinMarketCapsService {
     /// Returns list of user_delivery_address
-    fn get(&self, from: SystemTime, to: SystemTime) -> ServiceFuture<Vec<Capitalization>>;
+    fn get(&self, from: SystemTime, to: SystemTime) -> ServiceFuture<Vec<CoinMarketCapValue>>;
     /// Fetches more data from coinmarketcap
-    fn fetch_more(&self) -> ServiceFuture<Vec<Capitalization>>;
+    fn fetch_more(&self) -> ServiceFuture<Vec<CoinMarketCapValue>>;
 }
 
 /// UserDeliveryAddress services, responsible for UserDeliveryAddress-related CRUD operations
-pub struct CapitalizationServiceImpl<
+pub struct CoinMarketCapsServiceImpl<
     T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager> + 'static,
     M: ManageConnection<Connection = T>,
 > {
@@ -44,7 +44,7 @@ pub struct CapitalizationServiceImpl<
 impl<
         T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager> + 'static,
         M: ManageConnection<Connection = T>,
-    > CapitalizationServiceImpl<T, M>
+    > CoinMarketCapsServiceImpl<T, M>
 {
     pub fn new(db_pool: Pool<M>, cpu_pool: CpuPool, dns_threads: usize) -> Self {
         let mut connector = HttpsConnector::new(dns_threads).unwrap();
@@ -61,10 +61,10 @@ impl<
 impl<
         T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager> + 'static,
         M: ManageConnection<Connection = T>,
-    > CapitalizationService for CapitalizationServiceImpl<T, M>
+    > CoinMarketCapsService for CoinMarketCapsServiceImpl<T, M>
 {
     /// Returns list of user_delivery_address
-    fn get(&self, from: SystemTime, to: SystemTime) -> ServiceFuture<Vec<Capitalization>> {
+    fn get(&self, from: SystemTime, to: SystemTime) -> ServiceFuture<Vec<CoinMarketCapValue>> {
         let db_pool = self.db_pool.clone();
         Box::new(
             self.cpu_pool
@@ -73,18 +73,18 @@ impl<
                         .get()
                         .map_err(|e| e.context(ErrorKind::Connection).into())
                         .and_then(move |conn| {
-                            let capitalization_repo = CapitalizationsRepoImpl::new(&*conn);
+                            let capitalization_repo = CoinMarketCapsRepoImpl::new(&*conn);
                             capitalization_repo.list(from, to)
                         })
                 }).map_err(|e| {
-                    e.context("Service CapitalizationService, get endpoint error occured.")
+                    e.context("Service CoinMarketCapsService, get endpoint error occured.")
                         .into()
                 }),
         )
     }
 
     /// Fetches more data from coinmarketcap
-    fn fetch_more(&self) -> ServiceFuture<Vec<Capitalization>> {
+    fn fetch_more(&self) -> ServiceFuture<Vec<CoinMarketCapValue>> {
         let db_pool = self.db_pool.clone();
         let client = self.client.clone();
         Box::new(
@@ -94,7 +94,7 @@ impl<
                         .get()
                         .map_err(|e| e.context(ErrorKind::Connection).into())
                         .and_then(move |conn| {
-                            let capitalization_repo = CapitalizationsRepoImpl::new(&*conn);
+                            let capitalization_repo = CoinMarketCapsRepoImpl::new(&*conn);
                             capitalization_repo.last()
                             .and_then(
                                 |last| {
@@ -117,19 +117,19 @@ impl<
                                     if let Some((from, to)) = from_to {
                                         let mut query = HashMap::new();
                                         let url = format!("https://graphs2.coinmarketcap.com/currencies/storiqa/{}/{}/", from.timestamp(), to.timestamp());
-                                        request_entity::<Vec<CoinMarketCap>>(client, &Method::GET, &url, &query, None, None)
+                                        request_entity::<CoinMarketCap>(client, &Method::GET, &url, &query, None, None)
                                             .map_err(|e| e.context(ErrorKind::Http).into())
                                             .wait()
                                     } else {
-                                        Ok(vec![])
+                                        Ok(CoinMarketCap::default())
                                     }
                             })
                             .and_then(|caps| {
-                                capitalization_repo.add(caps)
+                                capitalization_repo.add(caps.to_vec())
                             })
                         })
                 }).map_err(|e| {
-                    e.context("Service CapitalizationService, get endpoint error occured.")
+                    e.context("Service CoinMarketCapsService, get endpoint error occured.")
                         .into()
                 }),
         )
