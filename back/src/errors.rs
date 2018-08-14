@@ -32,6 +32,10 @@ pub enum ErrorKind {
     NotFound,
     #[fail(display = "Parse error")]
     Parse,
+    #[fail(display = "Timer error")]
+    Timer,
+    #[fail(display = "Database error")]
+    Database,
     #[fail(display = "Server is refusing to fullfil the request")]
     Forbidden,
 }
@@ -76,7 +80,9 @@ impl Codeable for Error {
             | ErrorKind::Http
             | ErrorKind::HttpBody
             | ErrorKind::HttpBodyEntity
-            | ErrorKind::HttpBodyUtf8 => StatusCode::INTERNAL_SERVER_ERROR,
+            | ErrorKind::HttpBodyUtf8
+            | ErrorKind::Database
+            | ErrorKind::Timer => StatusCode::INTERNAL_SERVER_ERROR,
             ErrorKind::Forbidden => StatusCode::UNAUTHORIZED,
         }
     }

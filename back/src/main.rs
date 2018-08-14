@@ -11,5 +11,6 @@ fn main() {
             panic!("Error parsing config: {}", e);
         }
     };
-    dashboard_core::print_transactions(config, Some(6107421), None);
+    // dashboard_core::print_transactions(config, Some(6107421), None);
+    dashboard_core::start_ethereum_fetcher(config);
 }
