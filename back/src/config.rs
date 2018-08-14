@@ -1,3 +1,5 @@
+use std::env;
+
 use config_crate::{Config as RawConfig, ConfigError, Environment, File};
 
 #[derive(Debug, Deserialize, Clone)]
@@ -34,6 +36,9 @@ impl Config {
         let mut s = RawConfig::new();
         s.merge(File::with_name("config/config"))?;
         s.merge(File::with_name("config/secrets"))?;
+        // Optional file specific for environment
+        let env = env::var("RUN_MODE").unwrap_or_else(|_| "development".into());
+        s.merge(File::with_name(&format!("config/{}", env.to_string())).required(false))?;
         s.merge(Environment::with_prefix("DASHBOARD"))?;
         s.try_into()
     }
