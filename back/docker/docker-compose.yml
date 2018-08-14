@@ -1,0 +1,63 @@
+version: '3'
+services:
+  dashboard_server:
+    image: dashboard
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile
+    container_name: dashboard_server
+    working_dir: /app
+    command: ["sh", "-c", "/utils/wait_for_it.sh dashboard-pg:5432 ; diesel migration run ; cargo run --bin server"]
+    volumes:
+      - ..:/app
+      - cargo-cache:/usr/local/cargo
+    environment:
+      - DATABASE_URL=postgresql://dashboard:dashboard@dashboard-pg/dashboard
+      - PHASH_DIR=/opt/phash/pHash-0.9.6
+      - RUST_LOG=dashboard=debug
+    ports:
+      - 8000:8000
+    stdin_open: true
+    depends_on:
+      - dashboard-pg
+  
+  dashboard_coinmarketcap:
+    image: dashboard
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile
+    container_name: dashboard_coinmarketcap
+    working_dir: /app
+    command: ["sh", "-c", "/utils/wait_for_it.sh dashboard-pg:5432 ; diesel migration run ; cargo run --bin coinmarketcap_fetcher"]
+    volumes:
+      - ..:/app
+      - cargo-cache:/usr/local/cargo
+    environment:
+      - DATABASE_URL=postgresql://dashboard:dashboard@dashboard-pg/dashboard
+      - PHASH_DIR=/opt/phash/pHash-0.9.6
+      - RUST_LOG=dashboard=debug
+    stdin_open: true
+    depends_on:
+      - dashboard-pg
+
+  dashboard-pg:
+    image: postgres:10
+    container_name: dashboard-pg
+    volumes:
+      - ..:/app
+      - dashboard-postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=dashboard
+      - POSTGRES_DB=dashboard
+      - POSTGRES_PASSWORD=dashboard
+    ports:
+      - 5432:5432
+
+volumes:
+  cargo-cache:
+  dashboard-postgres-data:
+
+networks:
+  default:
+    external:
+      name: dashboard

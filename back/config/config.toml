@@ -1,4 +1,14 @@
-contract_address = "0x5c3a228510D246b78a3765C20221Cbf3082b44a4"
-
 [http]
 dns_threads = 4
+
+[server]
+host = "0.0.0.0"
+port = "8000"
+database = "postgresql://dashboard:dashboard@dashboard-pg/dashboard"
+thread_count = 20
+
+[ethereum]
+contract_address = "0x5c3a228510D246b78a3765C20221Cbf3082b44a4"
+transfer_topic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+fetcher_tick_seconds = 10
+api_key = ""
