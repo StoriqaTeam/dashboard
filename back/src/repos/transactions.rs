@@ -4,11 +4,11 @@
 
 use diesel;
 use diesel::connection::AnsiTransactionManager;
+use diesel::dsl::max;
 use diesel::pg::Pg;
 use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
 use diesel::Connection;
-use diesel::dsl::max;
 use failure::Error as FailureError;
 
 use super::types::RepoResult;
@@ -60,7 +60,9 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
     }
 
     fn max_block(&self) -> RepoResult<Option<i64>> {
-        transactions.select(max(block)).limit(1)
+        transactions
+            .select(max(block))
+            .limit(1)
             .get_result::<Option<i64>>(self.db_conn)
             .map_err(From::from)
             .map_err(|e: FailureError| {
@@ -78,4 +80,3 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
             .map_err(|e: FailureError| e.context(format!("Create new caps error occured.")).into())
     }
 }
-

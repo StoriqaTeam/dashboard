@@ -5,7 +5,5 @@ pub struct Ethereum {
 }
 
 impl Ethereum {
-    fn new() {
-
-    }
+    fn new() {}
 }
