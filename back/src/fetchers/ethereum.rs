@@ -2,17 +2,17 @@ use clients::EthereumClient;
 use environment::Environment;
 use errors::{Error, ErrorKind};
 use failure::Fail;
-use futures::stream;
 use futures::future;
 use futures::future::Either;
 use futures::prelude::*;
+use futures::stream;
 use repos::{TransactionsRepo, TransactionsRepoImpl};
+use std::cmp::{max, min};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 use tokio::timer::Interval;
 use types::DbPool;
-use std::cmp::{min, max};
 
 pub struct EthereumFetcher {
     busy: Mutex<bool>,
@@ -80,15 +80,18 @@ impl EthereumFetcher {
                     jobs.push((from, to));
                     from += to - from + 1;
                 }
-                let stream = stream::iter_ok(jobs).and_then(move |(from, to)| {
-                    client2.fetch_transactions(Some(from), Some(to))
-                }).and_then(move |transactions| {
-                    future::result(pool.get()).map(move |conn| (conn, transactions))
-                    .map_err(|e| e.context(ErrorKind::Connection).into())
-                }).and_then(|(conn, transactions)| {
-                    let repo = TransactionsRepoImpl::new(&*conn);
-                    repo.insert(transactions).map_err(|e| e.context(ErrorKind::Database).into())
-                });
+                let stream = stream::iter_ok(jobs)
+                    .and_then(move |(from, to)| client2.fetch_transactions(Some(from), Some(to)))
+                    .and_then(move |transactions| {
+                        future::result(pool.get())
+                            .map(move |conn| (conn, transactions))
+                            .map_err(|e| e.context(ErrorKind::Connection).into())
+                    })
+                    .and_then(|(conn, transactions)| {
+                        let repo = TransactionsRepoImpl::new(&*conn);
+                        repo.insert(transactions)
+                            .map_err(|e| e.context(ErrorKind::Database).into())
+                    });
                 stream.for_each(|_| Ok(()))
             })
             .map(|_| ())
