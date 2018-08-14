@@ -1,0 +1,93 @@
+.ExchangesStats {
+  .header {
+    display: flex;
+    font-family: "IBMPlexSansCond";
+    font-size: 14px;
+    font-weight: 500;
+    font-style: normal;
+    font-stretch: normal;
+    line-height: 2.5;
+    letter-spacing: normal;
+    color: #ffffff;
+
+    .stub {
+      flex: 4;
+    }
+
+    .col1,
+    .col2 {
+      flex: 3;
+    }
+  }
+
+  .item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    .title {
+      opacity: 0.34;
+      font-family: "IBMPlexSansCond";
+      font-size: 14px;
+      font-weight: bold;
+      font-style: normal;
+      font-stretch: normal;
+      line-height: 1;
+      letter-spacing: normal;
+      color: #ffffff;
+      flex: 2;
+    }
+
+    .volumes {
+      display: flex;
+      justify-content: flex-start;
+      flex: 3;
+
+      .stq {
+        font-family: "IBMPlexSansCond";
+        font-size: 14px;
+        font-weight: normal;
+        font-style: normal;
+        font-stretch: normal;
+        line-height: 2.5;
+        letter-spacing: normal;
+      }
+
+      .usd {
+        font-family: "IBMPlexSansCond";
+        font-size: 10px;
+        font-weight: normal;
+        font-style: normal;
+        font-stretch: normal;
+        letter-spacing: normal;
+        color: #cfddbb;
+      }
+
+      .buy {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+
+        .stq {
+          line-height: 1;
+          color: #02eeaf;
+        }
+      }
+
+      .sell {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+
+        .stq {
+          line-height: 1;
+          color: #fc5000;
+        }
+      }
+    }
+  }
+
+  .item + .item {
+    margin-top: 16px;
+  }
+}

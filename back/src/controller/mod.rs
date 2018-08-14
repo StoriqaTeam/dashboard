@@ -54,8 +54,7 @@ unsafe impl<T, M> Send for ControllerImpl<T, M>
 where
     T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager> + 'static,
     M: ManageConnection<Connection = T>,
-{
-}
+{}
 
 impl<
         T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager> + 'static,
@@ -99,7 +98,7 @@ impl<
 {
     /// Handle a request and get future response
     fn call(&self, req: Request<Body>) -> ControllerFuture {
-        let capitalizatoin_service = CoinMarketCapsServiceImpl::new(
+        let coinmarketcap_service = CoinMarketCapsServiceImpl::new(
             self.db_pool.clone(),
             self.cpu_pool.clone(),
             self.config.http.dns_threads,
@@ -109,22 +108,29 @@ impl<
         let path = uri.path();
 
         match (&req.method().clone(), self.route_parser.test(&path)) {
-            // GET /capitalization
-            (&Method::GET, Some(Route::Capitalization)) => {
+            // GET /coinmarketcap/history
+            (&Method::GET, Some(Route::CoinMarketCapHistory)) => {
                 if let (Some(from), Some(to)) = parse_query!(uri.query().unwrap_or_default(), "from" => DateTime<Utc>, "to" => DateTime<Utc>)
                 {
                     debug!(
-                        "Received request to get capitalization from {} to {}",
+                        "Received request to get coinmarketcap history from {} to {}",
                         from, to
                     );
-                    serialize_future(capitalizatoin_service.get(from.into(), to.into()))
+                    serialize_future(coinmarketcap_service.get(from.into(), to.into()))
                 } else {
                     Box::new(future::err(
-                        format_err!("Parsing query parameters // GET /capitalization failed!")
-                            .context(ErrorKind::Parse)
-                            .into(),
+                        format_err!(
+                            "Parsing query parameters // GET /coinmarketcap/history failed!"
+                        ).context(ErrorKind::Parse)
+                        .into(),
                     ))
                 }
+            }
+
+            // GET /coinmarketcap/last
+            (&Method::GET, Some(Route::CoinMarketCapLast)) => {
+                debug!("Received request to get coinmarketcap last value");
+                serialize_future(coinmarketcap_service.last())
             }
 
             // Fallback
@@ -134,7 +140,7 @@ impl<
                     m,
                     path
                 ).context(ErrorKind::NotFound)
-                    .into(),
+                .into(),
             )),
         }
     }

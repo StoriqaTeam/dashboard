@@ -16,19 +16,22 @@ use hyper::Client as HyperClient;
 use hyper::Method;
 use hyper_tls::HttpsConnector;
 use r2d2::{ManageConnection, Pool};
+use tokio_core::reactor::Core;
 
 use super::types::ServiceFuture;
 use errors::ErrorKind;
 use http::*;
-use models::{CoinMarketCap, CoinMarketCapValue};
+use models::{CoinMarketCap, CoinMarketCapValue, CoinMarketCapValueExt};
 use repos::{CoinMarketCapsRepo, CoinMarketCapsRepoImpl};
 use types::Client;
 
 pub trait CoinMarketCapsService {
-    /// Returns list of user_delivery_address
+    /// Returns coinmarketcap history
     fn get(&self, from: SystemTime, to: SystemTime) -> ServiceFuture<Vec<CoinMarketCapValue>>;
     /// Fetches more data from coinmarketcap
     fn fetch_more(&self) -> ServiceFuture<Vec<CoinMarketCapValue>>;
+    /// Fetches last coinmarketcap data
+    fn last(&self) -> ServiceFuture<CoinMarketCapValueExt>;
 }
 
 /// UserDeliveryAddress services, responsible for UserDeliveryAddress-related CRUD operations
@@ -76,8 +79,7 @@ impl<
                             let capitalization_repo = CoinMarketCapsRepoImpl::new(&*conn);
                             capitalization_repo.list(from, to)
                         })
-                })
-                .map_err(|e| {
+                }).map_err(|e| {
                     e.context("Service CoinMarketCapsService, get endpoint error occured.")
                         .into()
                 }),
@@ -112,14 +114,14 @@ impl<
                                     } else {
                                         let from = DateTime::<Utc>::from_utc(
                                             NaiveDateTime::new(
-                                                NaiveDate::from_ymd(2018, 03, 1),
+                                                NaiveDate::from_ymd(2018, 03, 14),
                                                 NaiveTime::from_hms(0, 0, 0),
                                             ),
                                             Utc,
                                         );
                                         let to = DateTime::<Utc>::from_utc(
                                             NaiveDateTime::new(
-                                                NaiveDate::from_ymd(2018, 03, 2),
+                                                NaiveDate::from_ymd(2018, 03, 15),
                                                 NaiveTime::from_hms(0, 0, 0),
                                             ),
                                             Utc,
@@ -129,16 +131,20 @@ impl<
 
                                     if let Some((from, to)) = from_to {
                                         let mut query = HashMap::new();
-                                        let url = format!("https://graphs2.coinmarketcap.com/currencies/storiqa/{}/{}/", from.timestamp(), to.timestamp());
-                                        request_entity::<CoinMarketCap>(
+                                        let url = format!("https://graphs2.coinmarketcap.com/currencies/storiqa/{}/{}/", from.timestamp() * 1000, to.timestamp() * 1000);
+                                        debug!("url = {}", url);
+                                        let mut core = Core::new().unwrap();
+                                        core.run(request_entity::<CoinMarketCap>(
                                             client,
                                             &Method::GET,
                                             &url,
                                             &query,
                                             None,
                                             None,
-                                        ).map_err(|e| e.context(ErrorKind::Http).into())
-                                            .wait()
+                                        ).map_err(|e| {
+                                                e.context(ErrorKind::Http).into()
+                                            }))
+
                                     } else {
                                         Ok(CoinMarketCap::default())
                                     }
@@ -147,7 +153,42 @@ impl<
                         })
                 })
                 .map_err(|e| {
-                    e.context("Service CoinMarketCapsService, get endpoint error occured.")
+                    e.context("Service CoinMarketCapsService, fetch_more endpoint error occured.")
+                        .into()
+                }),
+        )
+    }
+
+    /// Fetches last coinmarketcap data
+    fn last(&self) -> ServiceFuture<CoinMarketCapValueExt> {
+        let db_pool = self.db_pool.clone();
+        Box::new(
+            self.cpu_pool
+                .spawn_fn(move || {
+                    db_pool
+                        .get()
+                        .map_err(|e| e.context(ErrorKind::Connection).into())
+                        .and_then(move |conn| {
+                            let capitalization_repo = CoinMarketCapsRepoImpl::new(&*conn);
+                            capitalization_repo.last().and_then(|last| {
+                                if let Some(last) = last {
+                                    let from: DateTime<Utc> = last.time.into();
+                                    let to: DateTime<Utc> = from - Duration::days(1);
+                                    capitalization_repo
+                                        .list(from.into(), to.into())
+                                        .map(|list| {
+                                            CoinMarketCapValueExt::new(
+                                                last,
+                                                list.into_iter().nth(0).unwrap_or_default(),
+                                            )
+                                        })
+                                } else {
+                                    return Err(format_err!("No data!"));
+                                }
+                            })
+                        })
+                }).map_err(|e| {
+                    e.context("Service CoinMarketCapsService, last endpoint error occured.")
                         .into()
                 }),
         )

@@ -1,0 +1,54 @@
+.StoreStats {
+  .CountDown {
+    display: flex;
+    justify-content: space-between;
+    margin-top: -18px;
+
+    .is-day {
+      strong {
+        &:after {
+          content: ":";
+          position: absolute;
+          left: 32px;
+        }
+      }
+    }
+    .is-hour,
+    .is-min {
+      strong {
+        &:after {
+          content: ":";
+          position: absolute;
+          left: 36px;
+        }
+      }
+    }
+
+    &-col {
+      text-align: center;
+      position: relative;
+
+      strong {
+        font-family: IBMPlexSansCond;
+        font-size: 21px;
+        font-weight: 300;
+        font-style: normal;
+        font-stretch: normal;
+        line-height: 1.33;
+        letter-spacing: normal;
+        color: #ffffff;
+      }
+      span {
+        display: block;
+        opacity: 0.34;
+        font-family: "IBMPlexSansCond";
+        font-size: 12px;
+        font-weight: bold;
+        font-style: normal;
+        font-stretch: normal;
+        letter-spacing: normal;
+        color: #ffffff;
+      }
+    }
+  }
+}
