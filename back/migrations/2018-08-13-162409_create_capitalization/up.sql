@@ -1,5 +1,0 @@
-CREATE TABLE capitalization (
-    id SERIAL PRIMARY KEY,
-    time TIMESTAMP NOT NULL,
-    value DOUBLE PRECISION NOT NULL
-);

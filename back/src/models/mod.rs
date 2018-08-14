@@ -1,5 +1,5 @@
-mod capitalization;
+mod coinmarketcap;
 mod ethereum;
 
-pub use self::capitalization::*;
+pub use self::coinmarketcap::*;
 pub use self::ethereum::*;

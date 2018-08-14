@@ -1,7 +1,7 @@
 //! Repos is a module responsible for interacting with postgres db
 
-pub mod capitalization;
+pub mod coinmarketcap;
 pub mod types;
 
-pub use self::capitalization::*;
+pub use self::coinmarketcap::*;
 pub use self::types::*;
