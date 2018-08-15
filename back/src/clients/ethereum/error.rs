@@ -1,6 +1,6 @@
+use super::responses::Log;
 use std::fmt;
 use std::fmt::Display;
-use super::responses::Log;
 
 use failure::{Backtrace, Context, Fail};
 

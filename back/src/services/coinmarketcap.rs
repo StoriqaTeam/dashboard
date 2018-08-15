@@ -79,7 +79,8 @@ impl<
                             let capitalization_repo = CoinMarketCapsRepoImpl::new(&*conn);
                             capitalization_repo.list(from, to)
                         })
-                }).map_err(|e| {
+                })
+                .map_err(|e| {
                     e.context("Service CoinMarketCapsService, get endpoint error occured.")
                         .into()
                 }),
@@ -134,17 +135,16 @@ impl<
                                         let url = format!("https://graphs2.coinmarketcap.com/currencies/storiqa/{}/{}/", from.timestamp() * 1000, to.timestamp() * 1000);
                                         debug!("url = {}", url);
                                         let mut core = Core::new().unwrap();
-                                        core.run(request_entity::<CoinMarketCap>(
-                                            client,
-                                            &Method::GET,
-                                            &url,
-                                            &query,
-                                            None,
-                                            None,
-                                        ).map_err(|e| {
-                                                e.context(ErrorKind::Http).into()
-                                            }))
-
+                                        core.run(
+                                            request_entity::<CoinMarketCap>(
+                                                client,
+                                                &Method::GET,
+                                                &url,
+                                                &query,
+                                                None,
+                                                None,
+                                            ).map_err(|e| e.context(ErrorKind::Http).into()),
+                                        )
                                     } else {
                                         Ok(CoinMarketCap::default())
                                     }
@@ -187,7 +187,8 @@ impl<
                                 }
                             })
                         })
-                }).map_err(|e| {
+                })
+                .map_err(|e| {
                     e.context("Service CoinMarketCapsService, last endpoint error occured.")
                         .into()
                 }),

@@ -1,5 +1,5 @@
-mod responses;
 mod error;
+mod responses;
 
 use bigdecimal::BigDecimal;
 use failure::Fail;
@@ -14,9 +14,8 @@ use std::str::FromStr;
 use std::sync::Arc;
 use types::Client;
 
-
-use self::responses::*;
 pub use self::error::*;
+use self::responses::*;
 
 #[derive(Clone)]
 pub struct EthereumClient {
@@ -41,13 +40,9 @@ impl EthereumClient {
             .and_then(|response| {
                 let hexstr_number = response.result;
                 i64::from_str_radix(&hexstr_number[2..], 16).map_err(|e| {
-                    e.context(
-                    format_err!(
-                        "block number - {}",
-                        &hexstr_number[2..]
-                    ))
-                    .context(ErrorKind::Deserialization)
-                    .into()
+                    e.context(format_err!("block number - {}", &hexstr_number[2..]))
+                        .context(ErrorKind::Deserialization)
+                        .into()
                 })
             })
     }
@@ -85,51 +80,40 @@ impl EthereumClient {
                     .map(|log| {
                         let from_res: Result<String, Error> = log.topics.get(1).cloned().ok_or(
                             format_err!("topic at index 1, log: {:?}", &log)
-                            .context(ErrorKind::Deserialization)
-                            .into()
+                                .context(ErrorKind::Deserialization)
+                                .into(),
                         );
                         let to_res: Result<String, Error> = log.topics.get(2).cloned().ok_or(
                             format_err!("topic at index 2, log: {:?}", &log)
-                            .context(ErrorKind::Deserialization)
-                            .into()
+                                .context(ErrorKind::Deserialization)
+                                .into(),
                         );
-                        let block_res: Result<i64, Error> = i64::from_str_radix(
-                            &log.block_number[2..],
-                            16,
-                        ).map_err(
-                            |e| {
-                                e.context(
-                                format_err!(
+                        let block_res: Result<i64, Error> =
+                            i64::from_str_radix(&log.block_number[2..], 16).map_err(|e| {
+                                e.context(format_err!(
                                     "block number: `{}`, log: {:?}",
                                     &log.block_number[2..],
                                     &log
-                                )
-                            ).context(ErrorKind::Deserialization)
-                            .into()
-                            },
-                        );
+                                )).context(ErrorKind::Deserialization)
+                                    .into()
+                            });
                         // Bigdecimal cannot convert hex strings, only decimals
                         let value_res: Result<BigDecimal, Error> = u128::from_str_radix(
                             &log.data[2..],
                             16,
                         ).map_err(|e| {
-                            e.context(
-                                format_err!(
-                                    "value: `{}`, log: {:?}",
-                                    &log.data[2..],
-                                    &log
-                                )
-                            ).context(ErrorKind::Deserialization)
-                            .into()
+                            e.context(format_err!("value: `{}`, log: {:?}", &log.data[2..], &log))
+                                .context(ErrorKind::Deserialization)
+                                .into()
                         })
                             .and_then(|number| {
                                 // it's derirable to convert number to bigdecimal rightaway, but
                                 // there's some strange bug using from "u128"
                                 let decimal = format!("{}", number);
                                 BigDecimal::from_str(&decimal).map_err(|e| {
-                                    e.context(
-                                    format_err!("decimal: `{}`", number)
-                                ).context(ErrorKind::Deserialization).into()
+                                    e.context(format_err!("decimal: `{}`", number))
+                                        .context(ErrorKind::Deserialization)
+                                        .into()
                                 })
                             });
                         let from = from_res?;

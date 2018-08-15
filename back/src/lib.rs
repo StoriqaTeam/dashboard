@@ -111,7 +111,8 @@ pub fn print_current_block_number(config: Config) {
         .fetch_current_block_number()
         .map(|number| {
             println!("Current block number is {}, or {:x}", number, number);
-        }).map_err(|e| {
+        })
+        .map_err(|e| {
             log_error(&e);
         });
     tokio::run(future);
@@ -127,7 +128,8 @@ pub fn print_transactions(config: Config, from: Option<i64>, to: Option<i64>) {
                 "Transactions from {:?}, to {:?} are: {:?}",
                 from, to, transactions
             );
-        }).map_err(|e| {
+        })
+        .map_err(|e| {
             log_error(&e);
         });
     tokio::run(future);
@@ -176,7 +178,8 @@ pub fn fetch_coinmarketcap(config: Config) {
                 .wait()
                 .map(|_| ())
                 .map_err(|e| panic!("coinmarketcap service failed; err={:?}", e))
-        }).map_err(|e| panic!("interval errored; err={:?}", e));
+        })
+        .map_err(|e| panic!("interval errored; err={:?}", e));
 
     tokio::run(task);
 }
