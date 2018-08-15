@@ -2,7 +2,6 @@ mod responses;
 mod error;
 
 use bigdecimal::BigDecimal;
-use self::error::{Error, ErrorKind};
 use failure::Fail;
 use futures::Future;
 use http::request_entity;
@@ -17,6 +16,7 @@ use types::Client;
 
 
 use self::responses::*;
+pub use self::error::*;
 
 #[derive(Clone)]
 pub struct EthereumClient {

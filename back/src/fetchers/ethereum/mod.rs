@@ -1,45 +1,51 @@
+mod error;
+
 use clients::EthereumClient;
 use environment::Environment;
-use errors::{Error, ErrorKind};
 use failure::Fail;
 use futures::future;
 use futures::future::Either;
 use futures::prelude::*;
 use futures::stream;
-use repos::{TransactionsRepo, TransactionsRepoImpl};
+use repos::{TransactionsRepo, TransactionsRepoImpl, ReposErrorKind};
 use std::cmp::{max, min};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 use tokio::timer::Interval;
-use types::DbPool;
+use types::{DbPool, Connection};
+use self::error::*;
+use futures_cpupool::CpuPool;
+use diesel::pg::PgConnection;
 
+#[derive(Clone)]
 pub struct EthereumFetcher {
-    busy: Mutex<bool>,
+    busy: Arc<Mutex<bool>>,
     duration: Duration,
     db_pool: Arc<DbPool>,
     client: Arc<EthereumClient>,
     blocks_per_fetch: i64,
+    thread_pool: Arc<CpuPool>,
 }
 
 impl EthereumFetcher {
     pub fn new(env: Environment) -> Self {
         let duration = Duration::from_secs(env.config.ethereum.fetcher_tick_seconds as u64);
+        let thread_pool = CpuPool::new(env.config.fetcher.thread_count as usize);
         EthereumFetcher {
-            busy: Mutex::new(false),
+            busy: Arc::new(Mutex::new(false)),
             duration,
             db_pool: env.db_pool.clone(),
             client: env.ethereum_client.clone(),
             blocks_per_fetch: env.config.ethereum.blocks_per_fetch,
+            thread_pool: Arc::new(thread_pool),
         }
     }
 
     pub fn start(self) -> impl Stream<Item = (), Error = Error> {
         info!("Ethereum fetcher started.");
         let interval = Interval::new_interval(self.duration).map_err(|e| {
-            e.context(format_err!("Ethereum fetcher: error creating timer"))
-                .context(ErrorKind::Timer)
-                .into()
+            e.context(ErrorKind::Timer).into()
         });
 
         interval.and_then(move |_| {
@@ -59,12 +65,12 @@ impl EthereumFetcher {
         let client2 = self.client.clone();
         let blocks_per_fetch = self.blocks_per_fetch;
         let pool = self.db_pool.clone();
-        future::result(self.db_pool.get())
-            .map_err(|e| e.context(ErrorKind::Connection).into())
+        // self.transaction_repo_query(|repo| repo.max_block())
+        EthereumFetcher::get_connection(&*self.db_pool)
             .and_then(|conn| {
                 let repo = TransactionsRepoImpl::new(&*conn);
                 repo.max_block()
-                    .map_err(|e| e.context(ErrorKind::Database).into())
+                    .map_err(|e| e.context(ErrorKind::TransactionsRepo).into())
             })
             .and_then(move |maybe_max_block| {
                 let from = maybe_max_block.unwrap_or(-1) + 1;
@@ -95,5 +101,24 @@ impl EthereumFetcher {
                 stream.for_each(|_| Ok(()))
             })
             .map(|_| ())
+    }
+
+    fn transaction_repo_query<F, T>(&self, f: F) -> impl Future<Item = T, Error = Error>
+        where
+            T: Send + 'static,
+            F: FnOnce(TransactionsRepoImpl<PgConnection>) -> Result<T, ReposErrorKind> + Send + 'static,
+    {
+        let self_clone = self.clone();
+        self.thread_pool.spawn_fn(move || {
+            self_clone.get_connection_blocking().and_then(|conn| {
+                let repo = TransactionsRepoImpl::new(&*conn);
+                f(repo).map_err(|e| e.context(ErrorKind::TransactionsRepo).into())
+            })
+        })
+    }
+
+    fn get_connection_blocking(&self) -> impl Future<Item = Connection, Error = Error> {
+        future::result(self.db_pool.get())
+            .map_err(|e| e.context(ErrorKind::DatabaseConnecion).into())
     }
 }

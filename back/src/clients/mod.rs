@@ -1,3 +1,3 @@
 mod ethereum;
 
-pub use self::ethereum::EthereumClient;
+pub use self::ethereum::{EthereumClient, ErrorKind as EthereumClientErrorKind};
