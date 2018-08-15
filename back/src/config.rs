@@ -21,6 +21,7 @@ pub struct Server {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Ethereum {
+    pub storiqa_genesis_block: i64,
     pub contract_address: String,
     pub transfer_topic: String,
     pub api_key: String,

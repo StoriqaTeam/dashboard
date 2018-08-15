@@ -27,6 +27,7 @@ pub struct EthereumFetcher {
     client: Arc<EthereumClient>,
     blocks_per_fetch: i64,
     thread_pool: Arc<CpuPool>,
+    storiqa_genesis_block: i64,
 }
 
 impl EthereumFetcher {
@@ -40,6 +41,7 @@ impl EthereumFetcher {
             client: env.ethereum_client.clone(),
             blocks_per_fetch: env.config.ethereum.blocks_per_fetch,
             thread_pool: Arc::new(thread_pool),
+            storiqa_genesis_block: env.config.ethereum.storiqa_genesis_block,
         }
     }
 
@@ -49,7 +51,6 @@ impl EthereumFetcher {
             Interval::new_interval(self.duration).map_err(|e| e.context(ErrorKind::Timer).into());
 
         interval.and_then(move |_| {
-            info!("Tick!!!!!");
             let busy = *self
                 .busy
                 .lock()
@@ -80,7 +81,7 @@ impl EthereumFetcher {
         self.use_transactions_repo(|repo| repo.max_block())
             .and_then(move |maybe_max_block| {
                 // refetch last block in case data was corrupted
-                let from = maybe_max_block.unwrap_or(0);
+                let from = maybe_max_block.unwrap_or(self1.storiqa_genesis_block);
                 self1.use_ethereum_client(move |client| {
                     client
                         .fetch_current_block_number()
