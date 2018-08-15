@@ -4,6 +4,7 @@ use stq_router::RouteParser;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Route {
     CoinMarketCapHistory,
+    CoinMarketCapHistoryAll,
     CoinMarketCapLast,
 }
 
@@ -12,6 +13,10 @@ pub fn create_route_parser() -> RouteParser<Route> {
 
     // CoinMarketCapHistory
     router.add_route(r"^/coinmarketcap/history$", || Route::CoinMarketCapHistory);
+    // CoinMarketCapHistory
+    router.add_route(r"^/coinmarketcap/history/all$", || {
+        Route::CoinMarketCapHistoryAll
+    });
     // CoinMarketCapLast
     router.add_route(r"^/coinmarketcap/last$", || Route::CoinMarketCapLast);
 

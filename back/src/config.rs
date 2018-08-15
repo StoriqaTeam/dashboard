@@ -32,6 +32,7 @@ pub struct Ethereum {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Coinmarketcap {
     pub fetcher_tick_seconds: usize,
+    pub points_count: usize,
 }
 
 #[derive(Debug, Deserialize, Clone)]

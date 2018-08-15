@@ -76,7 +76,6 @@ impl CoinmarketcapFetcher {
     }
 
     fn make_step(self) -> impl Future<Item = (), Error = Error> {
-        info!("Step!!!");
         self.fetch_from_coinmarketcap_repo(|repo| repo.last())
             .and_then(move |(s, last)| {
                 let from_to = if let Some(last) = last {
@@ -114,6 +113,7 @@ impl CoinmarketcapFetcher {
                             from.timestamp() * 1000,
                             to.timestamp() * 1000
                         );
+                        info!("parsing: {}", url);
                         Either::A(request_entity::<CoinMarketCap>(
                             client,
                             &Method::GET,
