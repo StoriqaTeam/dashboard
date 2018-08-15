@@ -13,7 +13,7 @@ pub enum ErrorKind {
     #[fail(display = "Ethereum fetcher: Ethereum client error")]
     EthereumClient,
     #[fail(display = "Ethereum fetcher: Failed to obtain db connection")]
-    DatabaseConnecion,
+    DatabaseConnection,
     #[fail(display = "Ethereum client: Transactions repo error")]
     TransactionsRepo,
     #[fail(display = "Ethereum client: Error starting timer")]

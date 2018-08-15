@@ -124,6 +124,6 @@ impl EthereumFetcher {
 
     fn get_connection_blocking(&self) -> impl Future<Item = Connection, Error = Error> {
         future::result(self.db_pool.get())
-            .map_err(|e| e.context(ErrorKind::DatabaseConnecion).into())
+            .map_err(|e| e.context(ErrorKind::DatabaseConnection).into())
     }
 }
