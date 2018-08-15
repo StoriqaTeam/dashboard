@@ -15,8 +15,8 @@ name="coinmarketcap_fetcher"
 path="src/coinmarketcap_fetcher.rs"
 
 [[bin]]
-name="transactions"
-path="src/transactions.rs"
+name="fetcher"
+path="src/fetcher.rs"
 
 [dependencies]
 config = "0.9"
