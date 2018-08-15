@@ -110,6 +110,7 @@ fn build_request(
         };
         builder.body(body.into())
     } else {
+        trace!("Body: Empty");
         builder.body(Body::empty())
     };
     request_result.map_err(|e| e.context(ErrorKind::BuildRequest).into())

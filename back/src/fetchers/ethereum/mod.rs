@@ -49,32 +49,44 @@ impl EthereumFetcher {
             Interval::new_interval(self.duration).map_err(|e| e.context(ErrorKind::Timer).into());
 
         interval.and_then(move |_| {
-            let busy = self
+            info!("Tick!!!!!");
+            let busy = *self
                 .busy
                 .lock()
                 .expect("Ethereum fetcher: poisoned mutex at fetch step");
-            match *busy {
-                true => Either::A(future::ok(())),
+            match busy {
+                true => {
+                    warn!("Ethereum fetcher: tried to ping ethereum fetcher, but it was busy");
+                    Either::A(future::ok(()))
+                }
                 false => Either::B(self.make_step()),
             }
         })
     }
 
     fn make_step(&self) -> impl Future<Item = (), Error = Error> {
-        info!("Step!!!");
+        {
+            let mut busy = self
+                .busy
+                .lock()
+                .expect("Ethereum fetcher: poisoned mutex at fetch step");
+            *busy = true;
+        }
         let blocks_per_fetch = self.blocks_per_fetch;
         let self1 = self.clone();
         let self2 = self.clone();
         let self3 = self.clone();
-        self.fetch_from_transactions_repo(|repo| repo.max_block())
+        let self4 = self.clone();
+        self.use_transactions_repo(|repo| repo.max_block())
             .and_then(move |maybe_max_block| {
-                let from = maybe_max_block.unwrap_or(-1) + 1;
-                self1.fetch_from_ethereum(move |client| {
+                // refetch last block in case data was corrupted
+                let from = maybe_max_block.unwrap_or(0);
+                self1.use_ethereum_client(move |client| {
                     client
                         .fetch_current_block_number()
                         .map(move |to| (from, to))
                 })
-            }).map(move |(from_min, to_max)| {
+            }).and_then(move |(from_min, to_max)| {
                 let mut jobs: Vec<(i64, i64)> = Vec::new();
                 let mut from = from_min;
                 while from <= to_max {
@@ -84,17 +96,32 @@ impl EthereumFetcher {
                 }
                 let stream = stream::iter_ok(jobs)
                     .and_then(move |(from, to)| {
-                        self2.fetch_from_ethereum(move |client| {
+                        debug!(
+                            "Ethereum client: Fetching transactions for blocks `{}` - `{}`",
+                            from, to
+                        );
+                        self2.use_ethereum_client(move |client| {
                             client.fetch_transactions(Some(from), Some(to))
                         })
                     }).and_then(move |transactions| {
-                        self3.fetch_from_transactions_repo(move |repo| repo.insert(transactions))
+                        debug!(
+                            "Ethereum client: Received `{}` transactions",
+                            transactions.len()
+                        );
+                        self3.use_transactions_repo(move |repo| repo.insert(transactions))
                     });
                 stream.for_each(|_| Ok(()))
-            }).map(|_| ())
+            }).then(move |res| {
+                let mut busy = self4
+                    .busy
+                    .lock()
+                    .expect("Ethereum fetcher: poisoned mutex at fetch step");
+                *busy = false;
+                res
+            })
     }
 
-    fn fetch_from_ethereum<F, T, U>(&self, f: F) -> impl Future<Item = T, Error = Error>
+    fn use_ethereum_client<F, T, U>(&self, f: F) -> impl Future<Item = T, Error = Error>
     where
         T: Send + 'static,
         F: FnOnce(Arc<EthereumClient>) -> U + Send + 'static,
@@ -105,7 +132,7 @@ impl EthereumFetcher {
             .map_err(|e| e.context(ErrorKind::EthereumClient).into())
     }
 
-    fn fetch_from_transactions_repo<F, T>(&self, f: F) -> impl Future<Item = T, Error = Error>
+    fn use_transactions_repo<F, T>(&self, f: F) -> impl Future<Item = T, Error = Error>
     where
         T: Send + 'static,
         F: FnOnce(TransactionsRepoImpl<PgConnection>) -> Result<T, ReposError> + Send + 'static,
