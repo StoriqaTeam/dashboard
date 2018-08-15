@@ -9,6 +9,7 @@ use hyper::Method;
 use models::*;
 use serde::Deserialize;
 use serde_json::Value;
+use std::cmp::max;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -122,12 +123,14 @@ impl EthereumClient {
                         let block = block_res?;
                         let value = value_res?;
                         Ok(NewTransaction {
-                            from_address: TokenAddress::new(from.to_string()),
-                            to_address: TokenAddress::new(to.to_string()),
+                            from_address: TokenAddress::new(
+                                from[max(from.len() - 20, 0)..].to_string(),
+                            ),
+                            to_address: TokenAddress::new(to[max(to.len() - 20, 0)..].to_string()),
                             block,
                             value,
-                            block_hash: log.block_hash.clone(),
-                            transaction_hash: log.transaction_hash.clone(),
+                            block_hash: log.block_hash[2..].to_string(),
+                            transaction_hash: log.transaction_hash[2..].to_string(),
                         })
                     }).collect();
                 res

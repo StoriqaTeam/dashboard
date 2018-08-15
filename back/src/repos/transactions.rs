@@ -72,6 +72,10 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
         let query_store = diesel::insert_into(transactions).values(&txs);
         query_store
             .get_results::<Transaction>(self.db_conn)
-            .map_err(|e| e.context(ErrorKind::Diesel).into())
+            .map_err(|e| {
+                e.context(format_err!("{:?}", txs))
+                    .context(ErrorKind::Diesel)
+                    .into()
+            })
     }
 }
