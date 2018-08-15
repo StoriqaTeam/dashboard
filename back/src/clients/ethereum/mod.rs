@@ -1,7 +1,7 @@
+mod error;
 mod responses;
 
 use bigdecimal::BigDecimal;
-use errors::{Error, ErrorKind};
 use failure::Fail;
 use futures::Future;
 use http::request_entity;
@@ -14,6 +14,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use types::Client;
 
+pub use self::error::*;
 use self::responses::*;
 
 #[derive(Clone)]
@@ -38,12 +39,10 @@ impl EthereumClient {
         self.fetch::<BlockNumberResponse>("eth_blockNumber", None)
             .and_then(|response| {
                 let hexstr_number = response.result;
-                i64::from_str_radix(&hexstr_number[2..], 16).map_err(|_| {
-                    format_err!(
-                        "Ethereum block number request: Error parsing block number {} hex string as i64",
-                        &hexstr_number[2..]
-                    ).context(ErrorKind::Deserizalization)
-                    .into()
+                i64::from_str_radix(&hexstr_number[2..], 16).map_err(|e| {
+                    e.context(format_err!("block number - {}", &hexstr_number[2..]))
+                        .context(ErrorKind::Deserialization)
+                        .into()
                 })
             })
     }
@@ -80,52 +79,41 @@ impl EthereumClient {
                     .iter()
                     .map(|log| {
                         let from_res: Result<String, Error> = log.topics.get(1).cloned().ok_or(
-                            format_err!("Ethereum fetch transactions: Error getting topic at index 1 (`from_address`). Log receipt: {:?}", &log)
-                            .context(ErrorKind::Deserizalization)
-                            .into()
+                            format_err!("topic at index 1, log: {:?}", &log)
+                                .context(ErrorKind::Deserialization)
+                                .into(),
                         );
                         let to_res: Result<String, Error> = log.topics.get(2).cloned().ok_or(
-                            format_err!("Ethereum fetch transactions: Error getting topic at index 2 (`to_address`). Log receipt: {:?}", &log)
-                            .context(ErrorKind::Deserizalization)
-                            .into()
+                            format_err!("topic at index 2, log: {:?}", &log)
+                                .context(ErrorKind::Deserialization)
+                                .into(),
                         );
-                        let block_res: Result<i64, Error> = i64::from_str_radix(
-                            &log.block_number[2..],
-                            16,
-                        ).map_err(
-                            |e| {
-                                e.context(
-                                format_err!(
-                                    "Ethereum fetch transactions: Error parsing block number `{}` hex string as i64. Log receipt: {:?}",
+                        let block_res: Result<i64, Error> =
+                            i64::from_str_radix(&log.block_number[2..], 16).map_err(|e| {
+                                e.context(format_err!(
+                                    "block number: `{}`, log: {:?}",
                                     &log.block_number[2..],
                                     &log
-                                )
-                            ).context(ErrorKind::Deserizalization)
-                            .into()
-                            },
-                        );
+                                )).context(ErrorKind::Deserialization)
+                                    .into()
+                            });
                         // Bigdecimal cannot convert hex strings, only decimals
                         let value_res: Result<BigDecimal, Error> = u128::from_str_radix(
                             &log.data[2..],
                             16,
                         ).map_err(|e| {
-                            e.context(
-                                format_err!(
-                                    "Ethereum fetch transactions: Error parsing transaction value `{}` hex string as BigDecimal. Log receipt: {:?}",
-                                    &log.data[2..],
-                                    &log
-                                )
-                            ).context(ErrorKind::Deserizalization)
-                            .into()
+                            e.context(format_err!("value: `{}`, log: {:?}", &log.data[2..], &log))
+                                .context(ErrorKind::Deserialization)
+                                .into()
                         })
                             .and_then(|number| {
                                 // it's derirable to convert number to bigdecimal rightaway, but
                                 // there's some strange bug using from "u128"
                                 let decimal = format!("{}", number);
                                 BigDecimal::from_str(&decimal).map_err(|e| {
-                                    e.context(
-                                    format_err!("Ethereum fetch transactions: Error converting string value {} to `BigDecimal`", number)
-                                ).context(ErrorKind::Deserizalization).into()
+                                    e.context(format_err!("decimal: `{}`", number))
+                                        .context(ErrorKind::Deserialization)
+                                        .into()
                                 })
                             });
                         let from = from_res?;

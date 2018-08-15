@@ -7,6 +7,7 @@ pub struct Config {
     pub ethereum: Ethereum,
     pub http: Http,
     pub server: Server,
+    pub fetcher: Fetcher,
 }
 
 /// Common server settings
@@ -25,6 +26,11 @@ pub struct Ethereum {
     pub api_key: String,
     pub fetcher_tick_seconds: usize,
     pub blocks_per_fetch: i64,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Fetcher {
+    pub thread_count: u8,
 }
 
 #[derive(Debug, Deserialize, Clone)]
