@@ -122,7 +122,7 @@ impl<
                         format_err!(
                             "Parsing query parameters // GET /coinmarketcap/history failed!"
                         ).context(ErrorKind::Parse)
-                            .into(),
+                        .into(),
                     ))
                 }
             }
@@ -140,7 +140,7 @@ impl<
                     m,
                     path
                 ).context(ErrorKind::NotFound)
-                    .into(),
+                .into(),
             )),
         }
     }

@@ -23,7 +23,7 @@ use types::{Connection, DbPool};
 pub struct EthereumFetcher {
     busy: Arc<Mutex<bool>>,
     duration: Duration,
-    db_pool: Arc<DbPool>,
+    db_pool: DbPool,
     client: Arc<EthereumClient>,
     blocks_per_fetch: i64,
     thread_pool: Arc<CpuPool>,

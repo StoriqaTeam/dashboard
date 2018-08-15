@@ -5,6 +5,7 @@ use config_crate::{Config as RawConfig, ConfigError, Environment, File};
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub ethereum: Ethereum,
+    pub coinmarketcap: Coinmarketcap,
     pub http: Http,
     pub server: Server,
     pub fetcher: Fetcher,
@@ -26,6 +27,11 @@ pub struct Ethereum {
     pub api_key: String,
     pub fetcher_tick_seconds: usize,
     pub blocks_per_fetch: i64,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Coinmarketcap {
+    pub fetcher_tick_seconds: usize,
 }
 
 #[derive(Debug, Deserialize, Clone)]

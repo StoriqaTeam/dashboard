@@ -13,7 +13,7 @@ pub struct Environment {
     pub config: Arc<Config>,
     pub http_client: Arc<Client>,
     pub ethereum_client: Arc<EthereumClient>,
-    pub db_pool: Arc<DbPool>,
+    pub db_pool: DbPool,
 }
 
 impl Environment {
@@ -43,7 +43,7 @@ impl Environment {
             config: Arc::new(config),
             http_client: client,
             ethereum_client: Arc::new(ethereum_client),
-            db_pool: Arc::new(db_pool),
+            db_pool: db_pool,
         }
     }
 }
