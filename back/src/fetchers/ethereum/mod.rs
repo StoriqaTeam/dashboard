@@ -50,11 +50,11 @@ impl EthereumFetcher {
 
         interval.and_then(move |_| {
             info!("Tick!!!!!");
-            let busy = self
+            let busy = *self
                 .busy
                 .lock()
                 .expect("Ethereum fetcher: poisoned mutex at fetch step");
-            match *busy {
+            match busy {
                 true => {
                     warn!("Ethereum fetcher: tried to ping ethereum fetcher, but it was busy");
                     Either::A(future::ok(()))
@@ -65,7 +65,6 @@ impl EthereumFetcher {
     }
 
     fn make_step(&self) -> impl Future<Item = (), Error = Error> {
-        info!("Step!!!!!");
         {
             let mut busy = self
                 .busy
@@ -81,7 +80,6 @@ impl EthereumFetcher {
         self.use_transactions_repo(|repo| repo.max_block())
             .and_then(move |maybe_max_block| {
                 // refetch last block in case data was corrupted
-                info!("Maybe last block {:?}", maybe_max_block);
                 let from = maybe_max_block.unwrap_or(0);
                 self1.use_ethereum_client(move |client| {
                     client

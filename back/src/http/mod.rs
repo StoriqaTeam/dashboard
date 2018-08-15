@@ -60,8 +60,7 @@ pub fn request_bytes(
             .fold(Vec::new(), |mut acc, chunk| {
                 acc.extend_from_slice(&*chunk);
                 future::ok::<_, hyper::Error>(acc)
-            })
-            .map_err(|e| e.context(ErrorKind::HttpBody).into())
+            }).map_err(|e| e.context(ErrorKind::HttpBody).into())
     })
 }
 
@@ -111,6 +110,7 @@ fn build_request(
         };
         builder.body(body.into())
     } else {
+        trace!("Body: Empty");
         builder.body(Body::empty())
     };
     request_result.map_err(|e| e.context(ErrorKind::BuildRequest).into())
