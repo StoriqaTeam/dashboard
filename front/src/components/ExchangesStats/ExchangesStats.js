@@ -108,12 +108,12 @@ class ExchangesStats extends PureComponent<PropsType> {
     const { exchangesStats } = mock;
     return (
       <div className="ExchangesStats widget">
-        <div className="header">
+        {/* <div className="header">
           <div className="stub" />
           <div className="col1">STQ/$</div>
           <div className="col2">STQ/$</div>
         </div>
-        {map(renderExchangeStatsItem, exchangesStats)}
+        {map(renderExchangeStatsItem, exchangesStats)} */}
       </div>
     );
   }

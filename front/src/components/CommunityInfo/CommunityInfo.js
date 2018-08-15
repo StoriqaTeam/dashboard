@@ -97,7 +97,7 @@ class CommunityInfo extends PureComponent<PropsType> {
     const { telegram, facebook, twitter, emails } = mock;
     return (
       <div className="CommunityInfo widget">
-        <div className="title">
+        {/* <div className="title">
           <h2>Community</h2>
           <span>{moment().format("DD MMM")}</span>
         </div>
@@ -123,7 +123,7 @@ class CommunityInfo extends PureComponent<PropsType> {
           icon: "email",
           title: "Emails",
           statsValues: [{ icon: null, value: emails.emails }]
-        })}
+        })} */}
       </div>
     );
   }
