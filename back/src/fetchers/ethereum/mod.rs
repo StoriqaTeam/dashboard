@@ -23,7 +23,7 @@ use types::{Connection, DbPool};
 pub struct EthereumFetcher {
     busy: Arc<Mutex<bool>>,
     duration: Duration,
-    db_pool: Arc<DbPool>,
+    db_pool: DbPool,
     client: Arc<EthereumClient>,
     blocks_per_fetch: i64,
     thread_pool: Arc<CpuPool>,
@@ -74,8 +74,7 @@ impl EthereumFetcher {
                         .fetch_current_block_number()
                         .map(move |to| (from, to))
                 })
-            })
-            .map(move |(from_min, to_max)| {
+            }).map(move |(from_min, to_max)| {
                 let mut jobs: Vec<(i64, i64)> = Vec::new();
                 let mut from = from_min;
                 while from <= to_max {
@@ -88,13 +87,11 @@ impl EthereumFetcher {
                         self2.fetch_from_ethereum(move |client| {
                             client.fetch_transactions(Some(from), Some(to))
                         })
-                    })
-                    .and_then(move |transactions| {
+                    }).and_then(move |transactions| {
                         self3.fetch_from_transactions_repo(move |repo| repo.insert(transactions))
                     });
                 stream.for_each(|_| Ok(()))
-            })
-            .map(|_| ())
+            }).map(|_| ())
     }
 
     fn fetch_from_ethereum<F, T, U>(&self, f: F) -> impl Future<Item = T, Error = Error>

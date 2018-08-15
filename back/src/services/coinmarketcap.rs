@@ -79,8 +79,7 @@ impl<
                             let capitalization_repo = CoinMarketCapsRepoImpl::new(&*conn);
                             capitalization_repo.list(from, to)
                         })
-                })
-                .map_err(|e| {
+                }).map_err(|e| {
                     e.context("Service CoinMarketCapsService, get endpoint error occured.")
                         .into()
                 }),
@@ -172,23 +171,19 @@ impl<
                             let capitalization_repo = CoinMarketCapsRepoImpl::new(&*conn);
                             capitalization_repo.last().and_then(|last| {
                                 if let Some(last) = last {
-                                    let from: DateTime<Utc> = last.time.into();
-                                    let to: DateTime<Utc> = from - Duration::days(1);
+                                    let last_time: DateTime<
+                                        Utc,
+                                    > = last.time.into();
+                                    let day_ago: DateTime<Utc> = last_time - Duration::days(1);
                                     capitalization_repo
-                                        .list(from.into(), to.into())
-                                        .map(|list| {
-                                            CoinMarketCapValueExt::new(
-                                                last,
-                                                list.into_iter().nth(0).unwrap_or_default(),
-                                            )
-                                        })
+                                        .first_after(day_ago.into())
+                                        .map(|day_ago| CoinMarketCapValueExt::new(last, day_ago))
                                 } else {
                                     return Err(format_err!("No data!"));
                                 }
                             })
                         })
-                })
-                .map_err(|e| {
+                }).map_err(|e| {
                     e.context("Service CoinMarketCapsService, last endpoint error occured.")
                         .into()
                 }),

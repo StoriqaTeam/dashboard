@@ -1,4 +1,5 @@
 //! Models for managing capitalization
+use std::collections::HashMap;
 use std::time::SystemTime;
 
 use chrono::{TimeZone, Utc};
@@ -9,11 +10,11 @@ use schema::coin_market_cap_values;
 pub struct CoinMarketCapValue {
     pub id: i32,
     pub time: SystemTime,
-    pub capitalization: i64,
-    pub price_btc: f64,
-    pub price_usd: f64,
-    pub price_eth: f64,
-    pub volume_usd: i64,
+    pub capitalization: Option<i64>,
+    pub price_btc: Option<f64>,
+    pub price_usd: Option<f64>,
+    pub price_eth: Option<f64>,
+    pub volume_usd: Option<i64>,
 }
 
 impl Default for CoinMarketCapValue {
@@ -21,11 +22,11 @@ impl Default for CoinMarketCapValue {
         CoinMarketCapValue {
             time: SystemTime::UNIX_EPOCH,
             id: i32::default(),
-            capitalization: i64::default(),
-            price_btc: f64::default(),
-            price_usd: f64::default(),
-            price_eth: f64::default(),
-            volume_usd: i64::default(),
+            capitalization: None,
+            price_btc: None,
+            price_usd: None,
+            price_eth: None,
+            volume_usd: None,
         }
     }
 }
@@ -34,11 +35,11 @@ impl Default for CoinMarketCapValue {
 #[table_name = "coin_market_cap_values"]
 pub struct NewCoinMarketCapValue {
     pub time: SystemTime,
-    pub capitalization: i64,
-    pub price_btc: f64,
-    pub price_usd: f64,
-    pub price_eth: f64,
-    pub volume_usd: i64,
+    pub capitalization: Option<i64>,
+    pub price_btc: Option<f64>,
+    pub price_usd: Option<f64>,
+    pub price_eth: Option<f64>,
+    pub volume_usd: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -76,24 +77,60 @@ pub struct Volume {
 
 impl CoinMarketCap {
     pub fn to_vec(self) -> Vec<NewCoinMarketCapValue> {
-        let mut res = vec![];
-        for (i, cap) in self.market_cap_by_available_supply.into_iter().enumerate() {
-            let time = Utc.timestamp(cap.time / 1000, 0).into();
-            let capitalization = cap.value;
-            let price_btc = self.price_btc[i].value;
-            let price_usd = self.price_usd[i].value;
-            let price_eth = self.price_platform[i].value;
-            let volume_usd = self.volume_usd[i].value;
-            res.push(NewCoinMarketCapValue {
-                time,
-                capitalization,
-                price_btc,
-                price_usd,
-                price_eth,
-                volume_usd,
-            });
+        let mut hashmap = HashMap::<
+            SystemTime,
+            (
+                Option<i64>,
+                Option<f64>,
+                Option<f64>,
+                Option<f64>,
+                Option<i64>,
+            ),
+        >::new();
+        for cap in self.market_cap_by_available_supply {
+            hashmap
+                .entry(Utc.timestamp(cap.time / 1000, 0).into())
+                .or_insert((Some(cap.value), None, None, None, None));
         }
-        res
+        for price_btc in self.price_btc {
+            let (_, btc, _, _, _) = hashmap
+                .entry(Utc.timestamp(price_btc.time / 1000, 0).into())
+                .or_insert((None, Some(price_btc.value), None, None, None));
+            *btc = Some(price_btc.value);
+        }
+        for price_usd in self.price_usd {
+            let (_, _, usd, _, _) = hashmap
+                .entry(Utc.timestamp(price_usd.time / 1000, 0).into())
+                .or_insert((None, None, Some(price_usd.value), None, None));
+            *usd = Some(price_usd.value);
+        }
+        for price_platform in self.price_platform {
+            let (_, _, _, eth, _) = hashmap
+                .entry(Utc.timestamp(price_platform.time / 1000, 0).into())
+                .or_insert((None, None, None, Some(price_platform.value), None));
+            *eth = Some(price_platform.value);
+        }
+        for volume_usd in self.volume_usd {
+            let (_, _, _, _, vol) = hashmap
+                .entry(Utc.timestamp(volume_usd.time / 1000, 0).into())
+                .or_insert((None, None, None, None, Some(volume_usd.value)));
+            *vol = Some(volume_usd.value);
+        }
+
+        hashmap
+            .into_iter()
+            .map(
+                |(time, (capitalization, price_btc, price_usd, price_eth, volume_usd))| {
+                    NewCoinMarketCapValue {
+                        time,
+                        capitalization,
+                        price_btc,
+                        price_usd,
+                        price_eth,
+                        volume_usd,
+                    }
+                },
+            ).collect()
     }
 }
 
@@ -106,7 +143,7 @@ pub struct CoinMarketCapValueExt {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ValueExt {
-    value: f64,
+    value: Option<f64>,
     delta: Option<f64>,
 }
 
@@ -118,52 +155,78 @@ pub struct CurrenciesExt {
 }
 
 impl CoinMarketCapValueExt {
-    pub fn new(current: CoinMarketCapValue, before: CoinMarketCapValue) -> Self {
+    pub fn new(current: CoinMarketCapValue, before: Option<CoinMarketCapValue>) -> Self {
+        let before = before.unwrap_or_default();
         Self {
             price: CurrenciesExt {
                 usd: ValueExt {
                     value: current.price_usd,
-                    delta: Some((current.price_usd - before.price_usd) / before.price_usd),
+                    delta: current.price_usd.map(|price_usd| {
+                        (price_usd - before.price_usd.unwrap_or_default()) / price_usd * 100f64
+                    }),
                 },
                 eth: ValueExt {
                     value: current.price_eth,
-                    delta: Some((current.price_eth - before.price_eth) / before.price_eth),
+                    delta: current.price_eth.map(|price_eth| {
+                        (price_eth - before.price_eth.unwrap_or_default()) / price_eth * 100f64
+                    }),
                 },
                 btc: ValueExt {
                     value: current.price_btc,
-                    delta: Some((current.price_btc - before.price_btc) / before.price_btc),
+                    delta: current.price_btc.map(|price_btc| {
+                        (price_btc - before.price_btc.unwrap_or_default()) / price_btc * 100f64
+                    }),
                 },
             },
             volume: CurrenciesExt {
                 usd: ValueExt {
-                    value: current.volume_usd as f64,
-                    delta: Some(
-                        (current.volume_usd - before.volume_usd) as f64 / before.volume_usd as f64,
-                    ),
+                    value: current.volume_usd.map(|v| v as f64),
+                    delta: current.volume_usd.map(|volume_usd| {
+                        (volume_usd - before.volume_usd.unwrap_or_default()) as f64
+                            / volume_usd as f64
+                            * 100f64
+                    }),
                 },
                 eth: ValueExt {
-                    value: current.volume_usd as f64 * current.price_eth / current.price_usd,
+                    value: current.price_usd.map(|price_usd| {
+                        current.volume_usd.unwrap_or_default() as f64
+                            * current.price_eth.unwrap_or_default()
+                            / price_usd
+                    }),
                     delta: None,
                 },
                 btc: ValueExt {
-                    value: current.volume_usd as f64 * current.price_btc / current.price_usd,
+                    value: current.price_usd.map(|price_usd| {
+                        current.volume_usd.unwrap_or_default() as f64
+                            * current.price_btc.unwrap_or_default()
+                            / price_usd
+                    }),
                     delta: None,
                 },
             },
             marketcap: CurrenciesExt {
                 usd: ValueExt {
-                    value: current.capitalization as f64,
-                    delta: Some(
-                        (current.capitalization - before.capitalization) as f64
-                            / before.capitalization as f64,
-                    ),
+                    value: current.capitalization.map(|v| v as f64),
+                    delta: current.capitalization.map(|capitalization| {
+                        (capitalization - before.capitalization.unwrap_or_default()) as f64
+                            / capitalization as f64
+                            * 100f64
+                    }),
                 },
                 eth: ValueExt {
-                    value: current.capitalization as f64 * current.price_eth / current.price_usd,
+                    value: current.price_usd.map(|price_usd| {
+                        current.capitalization.unwrap_or_default() as f64
+                            * current.price_eth.unwrap_or_default()
+                            / price_usd
+                    }),
                     delta: None,
                 },
                 btc: ValueExt {
-                    value: current.capitalization as f64 * current.price_btc / current.price_usd,
+                    value: current.price_usd.map(|price_usd| {
+                        current.capitalization.unwrap_or_default() as f64
+                            * current.price_btc.unwrap_or_default()
+                            / price_usd
+                    }),
                     delta: None,
                 },
             },

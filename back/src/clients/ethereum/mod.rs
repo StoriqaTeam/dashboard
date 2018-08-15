@@ -95,27 +95,28 @@ impl EthereumClient {
                                     &log.block_number[2..],
                                     &log
                                 )).context(ErrorKind::Deserialization)
-                                    .into()
+                                .into()
                             });
                         // Bigdecimal cannot convert hex strings, only decimals
-                        let value_res: Result<BigDecimal, Error> = u128::from_str_radix(
-                            &log.data[2..],
-                            16,
-                        ).map_err(|e| {
-                            e.context(format_err!("value: `{}`, log: {:?}", &log.data[2..], &log))
-                                .context(ErrorKind::Deserialization)
-                                .into()
-                        })
-                            .and_then(|number| {
-                                // it's derirable to convert number to bigdecimal rightaway, but
-                                // there's some strange bug using from "u128"
-                                let decimal = format!("{}", number);
-                                BigDecimal::from_str(&decimal).map_err(|e| {
-                                    e.context(format_err!("decimal: `{}`", number))
-                                        .context(ErrorKind::Deserialization)
-                                        .into()
-                                })
-                            });
+                        let value_res: Result<BigDecimal, Error> =
+                            u128::from_str_radix(&log.data[2..], 16)
+                                .map_err(|e| {
+                                    e.context(format_err!(
+                                        "value: `{}`, log: {:?}",
+                                        &log.data[2..],
+                                        &log
+                                    )).context(ErrorKind::Deserialization)
+                                    .into()
+                                }).and_then(|number| {
+                                    // it's derirable to convert number to bigdecimal rightaway, but
+                                    // there's some strange bug using from "u128"
+                                    let decimal = format!("{}", number);
+                                    BigDecimal::from_str(&decimal).map_err(|e| {
+                                        e.context(format_err!("decimal: `{}`", number))
+                                            .context(ErrorKind::Deserialization)
+                                            .into()
+                                    })
+                                });
                         let from = from_res?;
                         let to = to_res?;
                         let block = block_res?;
@@ -128,8 +129,7 @@ impl EthereumClient {
                             block_hash: log.block_hash.clone(),
                             transaction_hash: log.transaction_hash.clone(),
                         })
-                    })
-                    .collect();
+                    }).collect();
                 res
             })
     }
