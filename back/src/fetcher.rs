@@ -11,5 +11,5 @@ fn main() {
             panic!("Error parsing config: {}", e);
         }
     };
-    dashboard_core::start_ethereum_fetcher(config);
+    dashboard_core::start_fetcher(config);
 }
