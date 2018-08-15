@@ -11,10 +11,6 @@ name="server"
 path="src/server.rs"
 
 [[bin]]
-name="coinmarketcap_fetcher"
-path="src/coinmarketcap_fetcher.rs"
-
-[[bin]]
 name="fetcher"
 path="src/fetcher.rs"
 

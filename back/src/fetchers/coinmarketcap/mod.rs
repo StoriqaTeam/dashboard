@@ -126,7 +126,8 @@ impl CoinmarketcapFetcher {
                         Either::B(future::ok(CoinMarketCap::default()))
                     }
                 })
-            }).and_then(|(s, caps)| s.fetch_from_coinmarketcap_repo(|repo| repo.add(caps.to_vec())))
+            })
+            .and_then(|(s, caps)| s.fetch_from_coinmarketcap_repo(|repo| repo.add(caps.to_vec())))
             .map(|_| ())
             .map_err(|(_, e)| e)
     }

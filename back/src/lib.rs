@@ -1,3 +1,4 @@
+#![recursion_limit = "128"]
 extern crate config as config_crate;
 extern crate hyper;
 extern crate hyper_tls;
@@ -105,7 +106,8 @@ pub fn print_current_block_number(config: Config) {
         .fetch_current_block_number()
         .map(|number| {
             println!("Current block number is {}, or {:x}", number, number);
-        }).map_err(|e| {
+        })
+        .map_err(|e| {
             log_error(&e);
         });
     tokio::run(future);
@@ -121,34 +123,43 @@ pub fn print_transactions(config: Config, from: Option<i64>, to: Option<i64>) {
                 "Transactions from {:?}, to {:?} are: {:?}",
                 from, to, transactions
             );
-        }).map_err(|e| {
+        })
+        .map_err(|e| {
             log_error(&e);
         });
     tokio::run(future);
 }
 
-pub fn start_ethereum_fetcher(config: Config) {
+pub fn start_fetcher(config: Config) {
+    let f = futures::future::ok(()).map(move |_| {
+        tokio::spawn(create_coinmarketcap_fetcher(config.clone()));
+        tokio::spawn(create_ethereum_fetcher(config));
+    });
+    tokio::run(f);
+}
+
+fn create_ethereum_fetcher(config: Config) -> impl Future<Item = (), Error = ()> {
     let environment = Environment::new(config);
     let fetcher = EthereumFetcher::new(environment);
     let stream = fetcher.start();
-    let future = stream
+    stream
         .or_else(|e| {
             log_error(&e);
             futures::future::ok(())
-        }).for_each(|_| futures::future::ok(()));
-    tokio::run(future);
+        })
+        .for_each(|_| futures::future::ok(()))
 }
 
-pub fn start_coinmarketcap_fetcher(config: Config) {
+fn create_coinmarketcap_fetcher(config: Config) -> impl Future<Item = (), Error = ()> {
     let environment = Environment::new(config);
     let fetcher = CoinmarketcapFetcher::new(environment);
     let stream = fetcher.start();
-    let future = stream
+    stream
         .or_else(|e| {
             log_error(&e);
             futures::future::ok(())
-        }).for_each(|_| futures::future::ok(()));
-    tokio::run(future);
+        })
+        .for_each(|_| futures::future::ok(()))
 }
 
 fn log_error(e: &Fail) {

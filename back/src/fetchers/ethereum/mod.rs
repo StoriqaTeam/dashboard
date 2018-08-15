@@ -87,7 +87,8 @@ impl EthereumFetcher {
                         .fetch_current_block_number()
                         .map(move |to| (from, to))
                 })
-            }).and_then(move |(from_min, to_max)| {
+            })
+            .and_then(move |(from_min, to_max)| {
                 let mut jobs: Vec<(i64, i64)> = Vec::new();
                 let mut from = from_min;
                 while from <= to_max {
@@ -97,14 +98,15 @@ impl EthereumFetcher {
                 }
                 let stream = stream::iter_ok(jobs)
                     .and_then(move |(from, to)| {
-                        debug!(
+                        info!(
                             "Ethereum client: Fetching transactions for blocks `{}` - `{}`",
                             from, to
                         );
                         self2.use_ethereum_client(move |client| {
                             client.fetch_transactions(Some(from), Some(to))
                         })
-                    }).and_then(move |transactions| {
+                    })
+                    .and_then(move |transactions| {
                         debug!(
                             "Ethereum client: Received `{}` transactions",
                             transactions.len()
@@ -112,7 +114,8 @@ impl EthereumFetcher {
                         self3.use_transactions_repo(move |repo| repo.insert(transactions))
                     });
                 stream.for_each(|_| Ok(()))
-            }).then(move |res| {
+            })
+            .then(move |res| {
                 let mut busy = self4
                     .busy
                     .lock()
