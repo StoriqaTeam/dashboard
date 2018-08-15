@@ -35,7 +35,7 @@ class StoreStats extends PureComponent<PropsType> {
     } = mock;
     return (
       <div className="StoreStats widget">
-        <h2>Store stats</h2>
+        {/* <h2>Store stats</h2>
         {formatNumValue("Stores", stores)}
         {formatNumValue("Items", items)}
         <div className="row">
@@ -63,7 +63,7 @@ class StoreStats extends PureComponent<PropsType> {
           hours="hours"
           mins="min-s"
           segs="sec-s"
-        />
+        /> */}
       </div>
     );
   }

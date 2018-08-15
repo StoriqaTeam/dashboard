@@ -20,8 +20,8 @@ class App extends Component {
           <CommunityInfo />
         </div>
         <div className="row2">
-          <div style={{ backgroundColor: "red" }} className="widget" />
-          <div style={{ backgroundColor: "green" }} className="widget" />
+          <div className="widget" />
+          <div className="widget" />
           <ExchangesStats />
         </div>
       </div>

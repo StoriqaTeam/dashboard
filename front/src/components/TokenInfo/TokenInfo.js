@@ -25,12 +25,11 @@ type PropsType = {
 };
 
 const TokenInfo = (props: PropsType) => {
-  console.log({ mock });
   const { volume, marketcap } = mock;
 
   return (
     <div className="TokenInfo widget">
-      <h2>Storiqa (stq)</h2>
+      {/* <h2>Storiqa (stq)</h2>
       {map(priceItem => {
         const currency = head(priceItem);
         const price = last(priceItem);
@@ -67,7 +66,7 @@ const TokenInfo = (props: PropsType) => {
       <div className="subtitle">
         <span>{formatNumber(marketcap.btc.value)} BTC</span>
         <span>{formatNumber(marketcap.eth.value)} ETH</span>
-      </div>
+      </div> */}
     </div>
   );
 };
