@@ -7,8 +7,17 @@ port = "8000"
 database = "postgresql://dashboard:dashboard@dashboard-pg/dashboard"
 thread_count = 20
 
+[fetcher]
+thread_count = 20
+
 [ethereum]
+storiqa_genesis_block = 4334119
 contract_address = "0x5c3a228510D246b78a3765C20221Cbf3082b44a4"
 transfer_topic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-fetcher_tick_seconds = 10
+fetcher_tick_seconds = 2
+blocks_per_fetch = 1000
 api_key = ""
+
+[coinmarketcap]
+fetcher_tick_seconds = 10
+points_count = 1000

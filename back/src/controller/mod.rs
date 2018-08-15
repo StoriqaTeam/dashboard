@@ -101,7 +101,7 @@ impl<
         let coinmarketcap_service = CoinMarketCapsServiceImpl::new(
             self.db_pool.clone(),
             self.cpu_pool.clone(),
-            self.config.http.dns_threads,
+            self.config.coinmarketcap.points_count,
         );
         let uri = req.uri();
 
@@ -131,6 +131,12 @@ impl<
             (&Method::GET, Some(Route::CoinMarketCapLast)) => {
                 debug!("Received request to get coinmarketcap last value");
                 serialize_future(coinmarketcap_service.last())
+            }
+
+            // GET /coinmarketcap/last
+            (&Method::GET, Some(Route::CoinMarketCapHistoryAll)) => {
+                debug!("Received request to get coinmarketcap all values");
+                serialize_future(coinmarketcap_service.all())
             }
 
             // Fallback

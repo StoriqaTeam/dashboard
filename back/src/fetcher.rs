@@ -11,5 +11,5 @@ fn main() {
             panic!("Error parsing config: {}", e);
         }
     };
-    dashboard_core::fetch_coinmarketcap(config);
+    dashboard_core::start_fetcher(config);
 }

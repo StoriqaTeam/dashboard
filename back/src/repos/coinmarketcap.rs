@@ -24,6 +24,10 @@ pub trait CoinMarketCapsRepo {
     fn last(&self) -> RepoResult<Option<CoinMarketCapValue>>;
     /// Add new value
     fn add(&self, new_caps: Vec<NewCoinMarketCapValue>) -> RepoResult<Vec<CoinMarketCapValue>>;
+    /// Returns first value after specified time
+    fn first_after(&self, after: SystemTime) -> RepoResult<Option<CoinMarketCapValue>>;
+    /// Returns all
+    fn all(&self) -> RepoResult<Vec<CoinMarketCapValue>>;
 }
 
 /// Implementation of Capitalization trait
@@ -55,7 +59,7 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
             .get_results::<CoinMarketCapValue>(self.db_conn)
             .map_err(From::from)
             .map_err(|e: FailureError| {
-                e.context(format!("list of capitalization error occured"))
+                e.context(format!("list of points of coinmarketcap error occured"))
                     .into()
             })
     }
@@ -68,7 +72,7 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
             .optional()
             .map_err(From::from)
             .map_err(|e: FailureError| {
-                e.context(format!("last capitalization point error occured"))
+                e.context(format!("last point of coinmarketcap error occured"))
                     .into()
             })
     }
@@ -80,5 +84,30 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
             .get_results::<CoinMarketCapValue>(self.db_conn)
             .map_err(From::from)
             .map_err(|e: FailureError| e.context(format!("Create new caps error occured.")).into())
+    }
+
+    /// Returns first value after specified time
+    fn first_after(&self, after: SystemTime) -> RepoResult<Option<CoinMarketCapValue>> {
+        let query = coin_market_cap_values
+            .filter(time.ge(after))
+            .order(time)
+            .limit(1);
+        query
+            .get_result::<CoinMarketCapValue>(self.db_conn)
+            .optional()
+            .map_err(From::from)
+            .map_err(|e: FailureError| {
+                e.context(format!("first after point of coinmarketcap error occured"))
+                    .into()
+            })
+    }
+
+    /// Returns all
+    fn all(&self) -> RepoResult<Vec<CoinMarketCapValue>> {
+        let query = coin_market_cap_values.order(time);
+        query
+            .get_results::<CoinMarketCapValue>(self.db_conn)
+            .map_err(From::from)
+            .map_err(|e: FailureError| e.context(format!("coinmarketcap all error occured")).into())
     }
 }
