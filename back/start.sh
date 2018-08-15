@@ -11,5 +11,5 @@ export RUN_MODE=server
 export RUST_LOG="dashboard=debug"
 
 ./target/release/server 2> $log_server > $log_server &
-./target/release/coinmarketcap_fetcher 2> $log_cf > $log_cf &
+./target/release/fetcher 2> $log_cf > $log_cf &
 #./target/release/transactions &

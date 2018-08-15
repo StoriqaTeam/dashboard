@@ -15,7 +15,7 @@ contract_address = "0x5c3a228510D246b78a3765C20221Cbf3082b44a4"
 transfer_topic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 fetcher_tick_seconds = 2
 blocks_per_fetch = 1000
-api_key = ""
+api_key = "75d4d84bc950405283cf797cb7531402"
 
 [coinmarketcap]
 fetcher_tick_seconds = 10
