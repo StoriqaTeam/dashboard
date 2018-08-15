@@ -69,8 +69,8 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
 
     fn insert(&self, txs: Vec<NewTransaction>) -> Result<Vec<Transaction>, Error> {
         trace!("Insert transactions {:?}.", txs);
-        let query_store = diesel::insert_into(transactions).values(&txs);
-        query_store
+        let query = diesel::insert_into(transactions).values(&txs).on_conflict(transaction_hash).do_nothing();
+        query
             .get_results::<Transaction>(self.db_conn)
             .map_err(|e| {
                 e.context(format_err!("{:?}", txs))
