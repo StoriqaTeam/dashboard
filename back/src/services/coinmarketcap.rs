@@ -1,5 +1,4 @@
 //! UserDeliveryAddress Services, presents CRUD operations with user_roles
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::SystemTime;
 
@@ -12,26 +11,20 @@ use diesel::pg::Pg;
 use diesel::Connection;
 use failure::Fail;
 use futures::Future;
-use hyper::Client as HyperClient;
-use hyper::Method;
-use hyper_tls::HttpsConnector;
 use r2d2::{ManageConnection, Pool};
-use tokio_core::reactor::Core;
 
 use super::types::ServiceFuture;
 use errors::ErrorKind;
-use http::*;
-use models::{CoinMarketCap, CoinMarketCapValue, CoinMarketCapValueExt};
+use models::{CoinMarketCapValue, CoinMarketCapValueExt};
 use repos::{CoinMarketCapsRepo, CoinMarketCapsRepoImpl};
-use types::Client;
 
 pub trait CoinMarketCapsService {
     /// Returns coinmarketcap history
     fn get(&self, from: SystemTime, to: SystemTime) -> ServiceFuture<Vec<CoinMarketCapValue>>;
-    /// Fetches more data from coinmarketcap
-    fn fetch_more(&self) -> ServiceFuture<Vec<CoinMarketCapValue>>;
     /// Fetches last coinmarketcap data
     fn last(&self) -> ServiceFuture<CoinMarketCapValueExt>;
+    /// Returns whole coinmarketcap history
+    fn all(&self) -> ServiceFuture<Vec<CoinMarketCapValue>>;
 }
 
 /// UserDeliveryAddress services, responsible for UserDeliveryAddress-related CRUD operations
@@ -41,7 +34,7 @@ pub struct CoinMarketCapsServiceImpl<
 > {
     pub db_pool: Pool<M>,
     pub cpu_pool: CpuPool,
-    pub client: Arc<Client>,
+    pub points_count: usize,
 }
 
 impl<
@@ -49,14 +42,11 @@ impl<
         M: ManageConnection<Connection = T>,
     > CoinMarketCapsServiceImpl<T, M>
 {
-    pub fn new(db_pool: Pool<M>, cpu_pool: CpuPool, dns_threads: usize) -> Self {
-        let mut connector = HttpsConnector::new(dns_threads).unwrap();
-        connector.force_https(true);
-        let client = Arc::new(HyperClient::builder().build(connector));
+    pub fn new(db_pool: Pool<M>, cpu_pool: CpuPool, points_count: usize) -> Self {
         Self {
             db_pool,
             cpu_pool,
-            client,
+            points_count,
         }
     }
 }
@@ -66,7 +56,7 @@ impl<
         M: ManageConnection<Connection = T>,
     > CoinMarketCapsService for CoinMarketCapsServiceImpl<T, M>
 {
-    /// Returns list of user_delivery_address
+    /// Returns coinmarketcap history
     fn get(&self, from: SystemTime, to: SystemTime) -> ServiceFuture<Vec<CoinMarketCapValue>> {
         let db_pool = self.db_pool.clone();
         Box::new(
@@ -86,10 +76,10 @@ impl<
         )
     }
 
-    /// Fetches more data from coinmarketcap
-    fn fetch_more(&self) -> ServiceFuture<Vec<CoinMarketCapValue>> {
+    /// Returns list of user_delivery_address
+    fn all(&self) -> ServiceFuture<Vec<CoinMarketCapValue>> {
         let db_pool = self.db_pool.clone();
-        let client = self.client.clone();
+        let points_count = self.points_count;
         Box::new(
             self.cpu_pool
                 .spawn_fn(move || {
@@ -98,61 +88,17 @@ impl<
                         .map_err(|e| e.context(ErrorKind::Connection).into())
                         .and_then(move |conn| {
                             let capitalization_repo = CoinMarketCapsRepoImpl::new(&*conn);
-                            capitalization_repo
-                                .last()
-                                .and_then(|last| {
-                                    let from_to = if let Some(last) = last {
-                                        let duration =
-                                            SystemTime::now().duration_since(last.time).unwrap();
-                                        if duration.as_secs() > 600 {
-                                            let from: DateTime<Utc> = last.time.into();
-                                            let to: DateTime<Utc> = from + Duration::days(1);
-                                            Some((from, to))
-                                        } else {
-                                            None
-                                        }
-                                    } else {
-                                        let from = DateTime::<Utc>::from_utc(
-                                            NaiveDateTime::new(
-                                                NaiveDate::from_ymd(2018, 03, 14),
-                                                NaiveTime::from_hms(0, 0, 0),
-                                            ),
-                                            Utc,
-                                        );
-                                        let to = DateTime::<Utc>::from_utc(
-                                            NaiveDateTime::new(
-                                                NaiveDate::from_ymd(2018, 03, 15),
-                                                NaiveTime::from_hms(0, 0, 0),
-                                            ),
-                                            Utc,
-                                        );
-                                        Some((from, to))
-                                    };
-
-                                    if let Some((from, to)) = from_to {
-                                        let mut query = HashMap::new();
-                                        let url = format!("https://graphs2.coinmarketcap.com/currencies/storiqa/{}/{}/", from.timestamp() * 1000, to.timestamp() * 1000);
-                                        debug!("url = {}", url);
-                                        let mut core = Core::new().unwrap();
-                                        core.run(
-                                            request_entity::<CoinMarketCap>(
-                                                client,
-                                                &Method::GET,
-                                                &url,
-                                                &query,
-                                                None,
-                                                None,
-                                            ).map_err(|e| e.context(ErrorKind::Http).into()),
-                                        )
-                                    } else {
-                                        Ok(CoinMarketCap::default())
-                                    }
-                                })
-                                .and_then(|caps| capitalization_repo.add(caps.to_vec()))
+                            capitalization_repo.all().map(|points| {
+                                let skip = points.len() / points_count;
+                                debug!("skip = {}", skip);
+                                points
+                                    .into_iter()
+                                    .filter(|p| p.id % (skip as i32) == 0)
+                                    .collect()
+                            })
                         })
-                })
-                .map_err(|e| {
-                    e.context("Service CoinMarketCapsService, fetch_more endpoint error occured.")
+                }).map_err(|e| {
+                    e.context("Service CoinMarketCapsService, get endpoint error occured.")
                         .into()
                 }),
         )
