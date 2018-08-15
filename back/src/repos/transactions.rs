@@ -15,6 +15,9 @@ use failure::Fail;
 use models::*;
 use schema::transactions::dsl::*;
 
+// postgres fails on 65k params.
+static MAX_SIZE_OF_BATCH_INSERT: usize = 1000;
+
 pub trait TransactionsRepo {
     fn list(&self, from: Option<i64>, to: Option<i64>) -> Result<Vec<Transaction>, Error>;
     fn insert(&self, txs: Vec<NewTransaction>) -> Result<Vec<Transaction>, Error>;
