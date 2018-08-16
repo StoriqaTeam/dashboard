@@ -15,8 +15,7 @@ use failure::Fail;
 use models::*;
 use schema::transactions::dsl::*;
 
-// postgres fails on 65k params.
-static MAX_SIZE_OF_BATCH_INSERT: usize = 1000;
+use super::MAX_ENTITIES_FOR_INSERT;
 
 pub trait TransactionsRepo {
     fn list(&self, from: Option<i64>, to: Option<i64>) -> Result<Vec<Transaction>, Error>;
@@ -72,13 +71,25 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
 
     fn insert(&self, txs: Vec<NewTransaction>) -> Result<Vec<Transaction>, Error> {
         trace!("Insert transactions {:?}.", txs);
-        let query = diesel::insert_into(transactions).values(&txs).on_conflict(transaction_hash).do_nothing();
-        query
-            .get_results::<Transaction>(self.db_conn)
-            .map_err(|e| {
-                e.context(format_err!("{:?}", txs))
-                    .context(ErrorKind::Diesel)
-                    .into()
-            })
+        let res = self
+            .db_conn
+            .transaction::<Vec<Transaction>, diesel::result::Error, _>(|| {
+                let mut res: Vec<Transaction> = Vec::new();
+                for tx_chunk in txs.chunks(MAX_ENTITIES_FOR_INSERT) {
+                    let tx_chunk = tx_chunk.to_vec();
+                    let query = diesel::insert_into(transactions)
+                        .values(&tx_chunk)
+                        .on_conflict(transaction_hash)
+                        .do_nothing();
+                    let mut db_txs = query.get_results::<Transaction>(self.db_conn)?;
+                    res.append(&mut db_txs);
+                }
+                Ok(res)
+            });
+        res.map_err(|e| {
+            e.context(format_err!("{:?}", txs))
+                .context(ErrorKind::Diesel)
+                .into()
+        })
     }
 }
