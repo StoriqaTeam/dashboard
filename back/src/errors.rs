@@ -24,20 +24,12 @@ pub enum ErrorKind {
     HttpBodyUtf8,
     #[fail(display = "Error parsing http string body into requested entity")]
     HttpBodyEntity,
-    #[fail(display = "Client: Deserialization error")]
-    Deserizalization,
     #[fail(display = "R2D2 connection error")]
     Connection,
     #[fail(display = "Not found")]
     NotFound,
     #[fail(display = "Parse error")]
     Parse,
-    #[fail(display = "Timer error")]
-    Timer,
-    #[fail(display = "Database error")]
-    Database,
-    #[fail(display = "Server is refusing to fullfil the request")]
-    Forbidden,
 }
 
 impl Fail for Error {
@@ -74,16 +66,13 @@ impl Codeable for Error {
     fn code(&self) -> StatusCode {
         match self.inner.get_context() {
             ErrorKind::NotFound => StatusCode::NOT_FOUND,
-            ErrorKind::Parse | ErrorKind::Deserizalization => StatusCode::UNPROCESSABLE_ENTITY,
+            ErrorKind::Parse => StatusCode::UNPROCESSABLE_ENTITY,
             ErrorKind::Connection
             | ErrorKind::BuildRequest
             | ErrorKind::Http
             | ErrorKind::HttpBody
             | ErrorKind::HttpBodyEntity
-            | ErrorKind::HttpBodyUtf8
-            | ErrorKind::Database
-            | ErrorKind::Timer => StatusCode::INTERNAL_SERVER_ERROR,
-            ErrorKind::Forbidden => StatusCode::UNAUTHORIZED,
+            | ErrorKind::HttpBodyUtf8 => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

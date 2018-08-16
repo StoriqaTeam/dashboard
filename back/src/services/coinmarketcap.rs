@@ -1,5 +1,4 @@
-//! UserDeliveryAddress Services, presents CRUD operations with user_roles
-use std::sync::Arc;
+//! Coinmarketcap Services, presents CRUD operations with points
 use std::time::SystemTime;
 
 use futures_cpupool::CpuPool;

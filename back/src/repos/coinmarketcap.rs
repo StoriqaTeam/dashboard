@@ -77,9 +77,12 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
             })
     }
 
-    /// Add new value
+    /// Add new values
     fn add(&self, new_caps: Vec<NewCoinMarketCapValue>) -> RepoResult<Vec<CoinMarketCapValue>> {
-        let query_store = diesel::insert_into(coin_market_cap_values).values(&new_caps);
+        let query_store = diesel::insert_into(coin_market_cap_values)
+            .values(&new_caps)
+            .on_conflict(time)
+            .do_nothing();
         query_store
             .get_results::<CoinMarketCapValue>(self.db_conn)
             .map_err(From::from)
