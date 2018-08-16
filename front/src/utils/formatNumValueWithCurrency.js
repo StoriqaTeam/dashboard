@@ -2,32 +2,41 @@
 
 import React from "react";
 import classname from "classnames";
+import { propOr } from "ramda";
 
 import { formatNumber } from "utils";
 
 import type { CurrencyType, NumValueType } from "types";
 
 type FormatNumValuePropsType = {
-  currency: CurrencyType,
-  numValue: NumValueType
+  currency: ?CurrencyType,
+  numValue: ?NumValueType
 };
 
 const formatNumValueWithCurrency = (input: FormatNumValuePropsType) => {
   const { currency, numValue } = input;
+  const delta = propOr(null, "delta", numValue);
+  const value = propOr(null, "value", numValue);
+  const deltaChar = propOr("%", "deltaChar", numValue);
+
+  if (!value) {
+    return null;
+  }
+
   if (currency === "usd") {
     return (
       <div className="value">
-        ${formatNumber(numValue.value)}
-        {numValue.delta ? (
+        ${formatNumber(value)}
+        {delta ? (
           <span
             className={classname("delta", {
-              positive: numValue.delta && numValue.delta > 0,
-              negative: numValue.delta && numValue.delta <= 0
+              positive: delta && delta > 0,
+              negative: delta && delta <= 0
             })}
           >
-            &nbsp; ({numValue.delta > 0 && `+`}
-            {formatNumber(numValue.delta)}
-            {numValue.deltaChar || ""})
+            &nbsp; ({delta > 0 && `+`}
+            {formatNumber(delta)}
+            {deltaChar || ""})
           </span>
         ) : (
           ""
@@ -38,17 +47,19 @@ const formatNumValueWithCurrency = (input: FormatNumValuePropsType) => {
 
   return (
     <div className="value">
-      {`${numValue.value} ${currency.toUpperCase()}`}
-      {numValue.delta ? (
+      {/* $FlowIgnoreMe */}
+      {`${currency === "btc" ? value.toFixed(8) : value} ${currency &&
+        currency.toUpperCase()}`}
+      {delta ? (
         <span
           className={classname("delta", {
-            positive: numValue.delta && numValue.delta > 0,
-            negative: numValue.delta && numValue.delta <= 0
+            positive: delta && delta > 0,
+            negative: delta && delta <= 0
           })}
         >
-          &nbsp; ({numValue.delta > 0 && `+`}
-          {formatNumber(numValue.delta)}
-          {numValue.deltaChar || ""})
+          &nbsp; ({delta > 0 && `+`}
+          {formatNumber(delta)}
+          {deltaChar || ""})
         </span>
       ) : (
         ""
