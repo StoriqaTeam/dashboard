@@ -24,10 +24,6 @@ import mock from "./mock";
 
 import "./MarketCapChart.scss";
 
-type PropsType = {
-  //
-};
-
 const safeExtract = (path: string, source: {}) => {
   const value = propOr(null, path, source);
   return value ? value.toFixed(8) : value;
@@ -222,6 +218,7 @@ class Marketcap extends Component<PropsType> {
         ]
       },
       options: {
+        maintainAspectRatio: false,
         animation: {
           duration: this.alreadyAnimated ? 0 : 1000
         },
@@ -308,6 +305,7 @@ class Marketcap extends Component<PropsType> {
         ]
       },
       options: {
+        maintainAspectRatio: false,
         animation: {
           duration: this.alreadyAnimated ? 0 : 1000
         },
@@ -375,11 +373,11 @@ class Marketcap extends Component<PropsType> {
             <span>CAP</span>
           </div>
         </div>
-        <div>
-          <canvas id="chart" height="100%" />
+        <div className="chartWrapper">
+          <canvas id="chart" />
         </div>
-        <div>
-          <canvas id="chartVolume" height="100%" />
+        <div className="chartVolumeWrapper">
+          <canvas id="chartVolume" />
         </div>
       </div>
     );

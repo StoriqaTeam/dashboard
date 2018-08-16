@@ -1,14 +1,20 @@
 .MarketCapChart {
+  width: 41.65%;
   position: relative;
 
   #chartVolume {
-    height: 60%;
     padding-left: 35px;
     box-sizing: content-box;
   }
 
-  #chart {
-    height: 40%;
+  .chartWrapper {
+    position: relative;
+    height: 35vh;
+  }
+
+  .chartVolumeWrapper {
+    position: relative;
+    height: 10vh;
   }
 
   .legend {
