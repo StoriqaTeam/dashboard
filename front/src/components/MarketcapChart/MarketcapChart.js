@@ -74,7 +74,8 @@ class Marketcap extends Component<PropsType, StateType> {
       data: Array<number>,
       min: number,
       max: number
-    }
+    },
+    volume: Array<?number>
   } {
     const result = reduce(
       (acc, item) => {
@@ -134,7 +135,8 @@ class Marketcap extends Component<PropsType, StateType> {
           assocPath(
             ["eth", "max"],
             max(prop("price_eth", item), path(["eth", "max"], acc))
-          )
+          ),
+          over(lensPath(["volume"]), append(propOr(null, "volume_usd", item)))
         )(acc);
       },
       {
@@ -158,7 +160,8 @@ class Marketcap extends Component<PropsType, StateType> {
           data: [],
           min: 999999999,
           max: 0
-        }
+        },
+        volume: []
       },
       data
     );
@@ -179,26 +182,30 @@ class Marketcap extends Component<PropsType, StateType> {
             yAxisID: "cap-y-axis",
             data: data.cap.data,
             borderColor: "rgba(109, 179, 228, 0.7)",
-            borderWidth: 1
+            borderWidth: 1,
+            backgroundColor: "transparent"
           },
           {
             yAxisID: "btc-y-axis",
             data: data.btc.data,
             borderColor: "rgba(255, 157, 31, 0.7)",
-            borderWidth: 1
+            borderWidth: 1,
+            backgroundColor: "transparent"
           },
           {
             yAxisID: "usd-y-axis",
             data: data.usd.data,
             borderColor: "rgba(255, 255, 255, 0.7)",
-            borderWidth: 1
+            borderWidth: 1,
+            backgroundColor: "transparent"
           },
           {
             yAxisID: "eth-y-axis",
             data: data.eth.data,
             borderColor: "rgba(0, 255, 255, 0.7)",
             borderWidth: 1,
-            spanGaps: false
+            spanGaps: false,
+            backgroundColor: "transparent"
           }
         ]
       },
@@ -217,7 +224,11 @@ class Marketcap extends Component<PropsType, StateType> {
               id: "cap-y-axis",
               type: "linear",
               position: "left",
+              gridLines: {
+                color: "rgba(109, 179, 228, 0.3)"
+              },
               ticks: {
+                fontColor: "#6db3e4",
                 beginAtZero: true,
                 callback: (value, index, values) => `$${value / 1000000}M`
               }
@@ -258,6 +269,60 @@ class Marketcap extends Component<PropsType, StateType> {
           ],
           xAxes: [
             {
+              gridLines: { display: false },
+              ticks: {
+                display: false
+              }
+            }
+          ]
+        }
+      }
+    });
+
+    const volCtx = document.getElementById("chartVolume");
+    const chartVolume = new Chart(volCtx, {
+      type: "line",
+      data: {
+        labels: data.labels,
+        datasets: [
+          {
+            data: data.volume,
+            borderColor: "gray",
+            backgroundColor: "gray"
+          }
+        ]
+      },
+      options: {
+        layout: {
+          padding: {
+            left: 0,
+            right: 35,
+            top: 0,
+            bottom: 0
+          }
+        },
+        elements: {
+          point: {
+            radius: 0
+          }
+        },
+        legend: {
+          display: false
+        },
+        scales: {
+          yAxes: [
+            {
+              type: "linear",
+              position: "left",
+              display: false,
+              ticks: {
+                beginAtZero: true
+              }
+            }
+          ],
+          xAxes: [
+            {
+              gridLines: { display: false },
               ticks: {
                 autoSkipPadding: 25,
                 maxRotation: 0,
@@ -269,7 +334,6 @@ class Marketcap extends Component<PropsType, StateType> {
         }
       }
     });
-    myChart.canvas.parentNode.style.height = "100%";
   }
 
   render() {
@@ -289,8 +353,11 @@ class Marketcap extends Component<PropsType, StateType> {
             <span>BTC</span>
           </div>
         </div>
-        <div style={{ height: "100%" }}>
-          <canvas id="chart" />
+        <div>
+          <canvas id="chart" height="100%" />
+        </div>
+        <div>
+          <canvas id="chartVolume" height="100%" />
         </div>
       </div>
     );

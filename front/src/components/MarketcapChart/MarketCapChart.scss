@@ -1,9 +1,18 @@
 .MarketCapChart {
   position: relative;
+  // height: 350px;
+
+  #chartVolume {
+    height: 60%;
+    padding-left: 35px;
+    box-sizing: content-box;
+  }
+
+  #chart {
+    height: 40%;
+  }
 
   .legend {
-    width: 74px;
-    height: 88px;
     opacity: 0.72;
     border-radius: 4px;
     background-color: #1d2532;
@@ -12,7 +21,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 32px;
+    padding: 16px;
 
     .legendRow {
       display: flex;
