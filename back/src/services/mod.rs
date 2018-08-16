@@ -2,6 +2,9 @@
 //! validation, authorization, etc.
 
 pub mod coinmarketcap;
+mod error;
+mod ethereum;
 pub mod types;
 
+pub use self::ethereum::*;
 pub use types::*;
