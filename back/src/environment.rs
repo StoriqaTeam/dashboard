@@ -68,11 +68,11 @@ impl ServerEnvironment {
         let db_pool = Pool::builder()
             .build(manager)
             .expect("Failed to create connection pool");
-
+        let thread_count = config.server.thread_count;
         ServerEnvironment {
             config: Arc::new(config),
             db_pool: db_pool,
-            thread_pool: CpuPool::new(config.server.thread_count),
+            thread_pool: CpuPool::new(thread_count),
         }
     }
 }

@@ -12,9 +12,9 @@ pub struct Error {
 pub enum ErrorKind {
     #[fail(display = "Repo: Diesel error")]
     Diesel,
-    #[fail(display = "Ethereum fetcher: Failed to obtain db connection")]
+    #[fail(display = "Ethereum service: Failed to obtain db connection")]
     DatabaseConnection,
-    #[fail(display = "Ethereum client: Transactions repo error")]
+    #[fail(display = "Ethereum service: Transactions repo error")]
     TransactionsRepo,
 }
 

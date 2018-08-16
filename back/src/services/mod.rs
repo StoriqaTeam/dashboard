@@ -2,7 +2,6 @@
 //! validation, authorization, etc.
 
 pub mod coinmarketcap;
-mod error;
 mod ethereum;
 pub mod types;
 

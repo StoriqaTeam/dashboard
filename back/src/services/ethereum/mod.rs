@@ -1,9 +1,9 @@
-use bigdecimal::BigDecimal;
+mod accounts;
+mod error;
+
 use environment::ServerEnvironment;
 use futures_cpupool::CpuPool;
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use super::error::*;
 use futures::Future;
 use futures::future;
 use repos::{ReposError, TransactionsRepo, TransactionsRepoImpl};
@@ -11,6 +11,10 @@ use types::{Connection, DbPool};
 use diesel::PgConnection;
 use failure::Fail;
 use models::Transaction;
+use models::*;
+use self::error::*;
+use self::accounts::Accounts;
+use self::accounts::Operation;
 
 #[derive(Clone)]
 struct EthereumService {
@@ -27,7 +31,7 @@ impl EthereumService {
             ..
         } = env;
         EthereumService {
-            accounts: Arc::new(Mutex::new(Accounts::default())),
+            accounts: Arc::new(Mutex::new(Accounts::new(TokenAddress::new(env.config.ethereum.contract_address)))),
             db_pool,
             thread_pool,
         }
@@ -36,15 +40,11 @@ impl EthereumService {
     pub fn sync(&self) -> impl Future<Item = (), Error = Error> {
         let self_clone = self.clone();
         self.use_transactions_repo(move |repo| {
-            let accounts = self_clone.accounts.lock().unwrap();
-            let transactions = repo.list(self_clone.accounts.block)?;
-            self_clone.apply_transactions(&mut accounts)
+            let mut accounts = self_clone.accounts.lock().unwrap();
+            let transactions = repo.list(Some(accounts.block + 1), None)?;
+            accounts.apply(&transactions, Operation::Apply);
+            Ok(())
         })
-        unimplemented!()
-    }
-
-    fn apply_transactions(acc: &mut Accounts, txs: &[Transaction]) {
-
     }
 
     fn use_transactions_repo<F, T>(&self, f: F) -> impl Future<Item = T, Error = Error>
@@ -68,17 +68,5 @@ impl EthereumService {
 
 }
 
-struct Accounts {
-    block: i64,
-    data: HashMap<String, BigDecimal>,
-}
 
-impl Default for Accounts {
-    fn default() -> Self {
-        Accounts {
-            block: 0,
-            data: HashMap::new(),
-        }
-    }
-}
 
