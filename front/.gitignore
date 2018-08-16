@@ -1,6 +1,4 @@
 
-!.gitignore
-
 node_modules
 dist
 .cache
