@@ -3,10 +3,10 @@
 import React, { PureComponent } from "react";
 import type { Node } from "react";
 
-import CountDown from "../../vendor/CountDown";
-import { formatNumValue, formatNumValueWithCurrency } from "../utils";
+import CountDown from "vendor/CountDown";
+import { formatNumValue, formatNumValueWithCurrency } from "utils";
 
-import type { NumValueType, CurrencyType } from "../../types";
+import type { NumValueType, CurrencyType } from "types";
 
 import "./StoreStats.scss";
 

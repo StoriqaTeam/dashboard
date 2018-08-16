@@ -5,9 +5,9 @@ import type { Node } from "react";
 import { addIndex, map } from "ramda";
 import moment from "moment";
 
-import type { NumValueType } from "../../types";
+import { formatNumValue } from "utils";
 
-import { formatNumValue } from "../utils";
+import type { NumValueType } from "types";
 
 import "./CommunityInfo.scss";
 

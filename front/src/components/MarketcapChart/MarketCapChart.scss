@@ -1,9 +1,17 @@
 .MarketCapChart {
   position: relative;
 
+  #chartVolume {
+    height: 60%;
+    padding-left: 35px;
+    box-sizing: content-box;
+  }
+
+  #chart {
+    height: 40%;
+  }
+
   .legend {
-    width: 74px;
-    height: 88px;
     opacity: 0.72;
     border-radius: 4px;
     background-color: #1d2532;
@@ -12,7 +20,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 32px;
+    padding: 16px;
 
     .legendRow {
       display: flex;
@@ -49,6 +57,13 @@
       width: 8px;
       height: 8px;
       background-color: #ff9d1f;
+      border-radius: 50%;
+    }
+
+    .capBullet {
+      width: 8px;
+      height: 8px;
+      background-color: #6db3e4;
       border-radius: 50%;
     }
   }

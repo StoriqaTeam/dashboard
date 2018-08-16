@@ -6,6 +6,14 @@
 $color_green: #00ffb8;
 $color_red: #ee5922;
 
+* {
+  margin: 0;
+  padding: 0;
+  vertical-align: baseline;
+  box-sizing: border-box;
+  outline: none;
+}
+
 body {
   background-color: #1d2532;
   margin: 0;
