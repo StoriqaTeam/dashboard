@@ -2,6 +2,18 @@
   "presets": [
     "env",
     "react",
-    "flow"
+    "flow",
+    "es2016"
+  ],
+  "plugins": [
+    [
+      "module-resolver",
+      {
+        "root": [
+          "./src"
+        ]
+      }
+    ],
+    "transform-class-properties"
   ]
 }

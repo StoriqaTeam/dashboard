@@ -3,9 +3,9 @@
 import React, { PureComponent } from "react";
 import { map } from "ramda";
 
-import type { Node } from "react";
+import { formatNumber } from "utils";
 
-import { formatNumber } from "../utils";
+import type { Node } from "react";
 
 import "./ExchangesStats.scss";
 

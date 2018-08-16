@@ -3,9 +3,9 @@
 import React from "react";
 import classname from "classnames";
 
-import { formatNumber } from "../utils";
+import { formatNumber } from "utils";
 
-import type { CurrencyType, NumValueType } from "../../types";
+import type { CurrencyType, NumValueType } from "types";
 
 type FormatNumValuePropsType = {
   currency: CurrencyType,

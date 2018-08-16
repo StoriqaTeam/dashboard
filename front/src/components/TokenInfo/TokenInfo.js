@@ -5,12 +5,13 @@ import type { Node } from "react";
 import { map, head, last, toPairs, prop } from "ramda";
 import classname from "classnames";
 
-import "./TokenInfo.scss";
+import { formatNumber, formatNumValueWithCurrency } from "utils";
 
-import type { CurrencyType, NumValueType } from "../../types";
+import type { CurrencyType, NumValueType } from "types";
 
 import mock from "./mock";
-import { formatNumber, formatNumValueWithCurrency } from "../utils";
+
+import "./TokenInfo.scss";
 
 type PropsType = {
   price: {

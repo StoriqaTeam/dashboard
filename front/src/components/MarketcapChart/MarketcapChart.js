@@ -18,6 +18,8 @@ import {
 } from "ramda";
 import moment from "moment";
 
+import { apiClient } from "utils";
+
 import mock from "./mock";
 
 import "./MarketCapChart.scss";
@@ -26,30 +28,42 @@ type PropsType = {
   //
 };
 
-type StateType = {
-  //
-};
-
-type ChartDataInputType = {
-  type: string,
-  data: {
-    labels: Array<Date>,
-    datasets: Array<{
-      data: Array<any>
-    }>
-  }
-};
-
 const safeExtract = (path: string, source: {}) => {
   const value = propOr(null, path, source);
   return value ? value.toFixed(8) : value;
 };
 
-class Marketcap extends Component<PropsType, StateType> {
+class Marketcap extends Component<PropsType> {
+  unmounted = true;
+  alreadyAnimated = false;
+
   componentDidMount() {
-    const data = this.prepareData(mock);
-    this.initChart(data);
+    this.unmounted = false;
+    this.fetchChart();
   }
+
+  componentWillUnmount() {
+    this.unmounted = true;
+  }
+
+  fetchChart = () => {
+    apiClient
+      .fetchMarketCap()
+      .then(response => {
+        const data = this.prepareData(response.data);
+        this.initChart(data);
+        this.alreadyAnimated = true;
+        setTimeout(() => {
+          this.fetchChart();
+        }, 10000);
+      })
+      .catch(err => {
+        console.log(err);
+        setTimeout(() => {
+          this.fetchChart();
+        }, 10000);
+      });
+  };
 
   prepareData(
     data: Array<{}>
@@ -165,13 +179,11 @@ class Marketcap extends Component<PropsType, StateType> {
       },
       data
     );
-    console.log({ result });
 
     return result;
   }
 
   initChart(data: {}) {
-    console.log({ data });
     const ctx = document.getElementById("chart");
     const myChart = new Chart(ctx, {
       type: "line",
@@ -195,14 +207,14 @@ class Marketcap extends Component<PropsType, StateType> {
           {
             yAxisID: "usd-y-axis",
             data: data.usd.data,
-            borderColor: "rgba(255, 255, 255, 0.7)",
+            borderColor: "rgba(0, 251, 182, 0.7)",
             borderWidth: 1,
             backgroundColor: "transparent"
           },
           {
             yAxisID: "eth-y-axis",
             data: data.eth.data,
-            borderColor: "rgba(0, 255, 255, 0.7)",
+            borderColor: "rgba(238, 89, 34, 0.7)",
             borderWidth: 1,
             spanGaps: false,
             backgroundColor: "transparent"
@@ -210,6 +222,9 @@ class Marketcap extends Component<PropsType, StateType> {
         ]
       },
       options: {
+        animation: {
+          duration: this.alreadyAnimated ? 0 : 1000
+        },
         elements: {
           point: {
             radius: 0
@@ -293,6 +308,9 @@ class Marketcap extends Component<PropsType, StateType> {
         ]
       },
       options: {
+        animation: {
+          duration: this.alreadyAnimated ? 0 : 1000
+        },
         layout: {
           padding: {
             left: 0,
@@ -351,6 +369,10 @@ class Marketcap extends Component<PropsType, StateType> {
           <div className="legendRow">
             <div className="btcBullet" />
             <span>BTC</span>
+          </div>
+          <div className="legendRow">
+            <div className="capBullet" />
+            <span>CAP</span>
           </div>
         </div>
         <div>

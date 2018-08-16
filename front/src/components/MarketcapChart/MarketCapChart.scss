@@ -1,6 +1,5 @@
 .MarketCapChart {
   position: relative;
-  // height: 350px;
 
   #chartVolume {
     height: 60%;
@@ -58,6 +57,13 @@
       width: 8px;
       height: 8px;
       background-color: #ff9d1f;
+      border-radius: 50%;
+    }
+
+    .capBullet {
+      width: 8px;
+      height: 8px;
+      background-color: #6db3e4;
       border-radius: 50%;
     }
   }

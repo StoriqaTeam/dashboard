@@ -3,9 +3,9 @@
 import React from "react";
 import type { Node } from "react";
 
-import { formatNumber } from "../utils";
+import { formatNumber } from "utils";
 
-import type { NumValueType } from "../../types";
+import type { NumValueType } from "types";
 
 const formatNumValue = (title: ?string, numValue: NumValueType): Node => {
   const { value, delta, deltaChar } = numValue;
