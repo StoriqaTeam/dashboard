@@ -1,3 +1,19 @@
 .TokenInfo {
   width: 25%;
+
+  div:first-of-type {
+    margin-top: 1vw;
+  }
+
+  .row {
+    line-height: 2;
+
+    .title {
+      margin-top: 0;
+    }
+  }
+
+  .subtitle {
+    line-height: 1;
+  }
 }

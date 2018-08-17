@@ -80,7 +80,7 @@ class TokenInfo extends Component<{}, StateType> {
             </div>
           );
         }, toPairs(this.state.data.price))}
-        <div className="row" style={{ marginTop: 20 }}>
+        <div className="row" style={{ marginTop: "1.7vw" }}>
           <div className="title">Volume (24h)</div>
           {formatNumValueWithCurrency({
             currency: "usd",
@@ -103,7 +103,7 @@ class TokenInfo extends Component<{}, StateType> {
             ETH
           </span>
         </div>
-        <div className="row" style={{ marginTop: 10 }}>
+        <div className="row" style={{ marginTop: "1vw" }}>
           <div className="title">Market Cap</div>
           {formatNumValueWithCurrency({
             currency: "usd",
