@@ -26,6 +26,8 @@ pub struct Ethereum {
     pub storiqa_genesis_block: i64,
     pub contract_address: String,
     pub transfer_topic: String,
+    pub mint_topic: String,
+    pub batch_send_address: String,
     pub api_key: String,
     pub fetcher_tick_seconds: usize,
     pub average_block_time_secs: u8,

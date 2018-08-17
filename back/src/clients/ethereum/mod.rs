@@ -24,17 +24,28 @@ static ADDRESS_LENGTH: usize = 40;
 pub struct EthereumClient {
     client: Arc<Client>,
     key: String,
-    topic: String,
+    transfer_topic: String,
+    mint_topic: String,
     contract_address: String,
+    batch_send_address: String,
 }
 
 impl EthereumClient {
-    pub fn new(client: Arc<Client>, key: String, topic: String, contract_address: String) -> Self {
+    pub fn new(
+        client: Arc<Client>,
+        key: String,
+        transfer_topic: String,
+        mint_topic: String,
+        contract_address: String,
+        batch_send_address: String,
+    ) -> Self {
         EthereumClient {
             client,
             key,
-            topic,
+            transfer_topic,
+            mint_topic,
             contract_address,
+            batch_send_address,
         }
     }
 
@@ -55,8 +66,10 @@ impl EthereumClient {
         from_block: Option<i64>,
         to_block: Option<i64>,
     ) -> impl Future<Item = Vec<NewTransaction>, Error = Error> {
-        let address = self.contract_address.clone();
-        let topics = vec![self.topic.clone()];
+        // let address = self.contract_address.clone();
+        let address = self.batch_send_address.clone();
+        // let topics = vec![self.transfer_topic.clone(), self.mint_topic.clone()];
+        let topics = vec![self.mint_topic.clone()];
         let mut params = json!({
             "address": address,
             "topics": topics,
@@ -75,19 +88,34 @@ impl EthereumClient {
         params = json!({
             "params": vec![params],
         });
+        let mint_topic = self.mint_topic.clone();
+        let contract_address = self.contract_address.clone();
         self.fetch::<LogsResponse>("eth_getLogs", Some(params))
-            .and_then(|response| {
+            .and_then(move |response| {
                 let res: Result<Vec<NewTransaction>, Error> = response
                     .result
                     .iter()
-                    .map(|log| {
-                        let from_res: Result<String, Error> = log.topics.get(1).cloned().ok_or(
-                            format_err!("topic at index 1, log: {:?}", &log)
-                                .context(ErrorKind::Deserialization)
-                                .into(),
-                        );
-                        let to_res: Result<String, Error> = log.topics.get(2).cloned().ok_or(
-                            format_err!("topic at index 2, log: {:?}", &log)
+                    .map(move |log| {
+                        let event_topic_res: Result<String, Error> =
+                            log.topics.get(0).cloned().ok_or(
+                                format_err!("topic at index 0, log: {:?}", &log)
+                                    .context(ErrorKind::Deserialization)
+                                    .into(),
+                            );
+                        let event_topic = event_topic_res?;
+                        let to_idx = if event_topic == mint_topic { 1 } else { 2 };
+
+                        let from_res: Result<String, Error> = if event_topic == mint_topic {
+                            log.topics.get(to_idx).cloned().ok_or(
+                                format_err!("topic at index 1, log: {:?}", &log)
+                                    .context(ErrorKind::Deserialization)
+                                    .into(),
+                            )
+                        } else {
+                            Ok(contract_address.clone())
+                        };
+                        let to_res: Result<String, Error> = log.topics.get(to_idx).cloned().ok_or(
+                            format_err!("topic at index {}, log: {:?}", to_idx, &log)
                                 .context(ErrorKind::Deserialization)
                                 .into(),
                         );

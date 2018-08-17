@@ -26,7 +26,9 @@ impl FetcherEnvironment {
             client.clone(),
             config.ethereum.api_key.clone(),
             config.ethereum.transfer_topic.clone(),
+            config.ethereum.mint_topic.clone(),
             config.ethereum.contract_address.clone(),
+            config.ethereum.batch_send_address.clone(),
         );
 
         // Prepare database pool

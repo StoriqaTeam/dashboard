@@ -13,9 +13,11 @@ thread_count = 20
 [ethereum]
 storiqa_genesis_block = 4334119
 contract_address = "0x5c3a228510D246b78a3765C20221Cbf3082b44a4"
+batch_send_address = "0x7bb7ad9e14442d4b26f7a44f59b8f8378fd66974"
 transfer_topic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+mint_topic = "0xfc25c495e03e931eb1fd79bd15d1853496284e348ed2f9b6b02f7f53400a0d25"
 fetcher_tick_seconds = 2
-blocks_per_fetch = 1000
+blocks_per_fetch = 100000
 average_block_time_secs = 17
 histogram_break_points = [500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
 api_key = ""

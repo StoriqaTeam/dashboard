@@ -26,6 +26,11 @@ KECCAK("Transfer(address,address,uint256)") =
 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
 ```
 
+```
+Mint topic =
+KECCAK("Mint(address,uint256)") =
+0xfc25c495e03e931eb1fd79bd15d1853496284e348ed2f9b6b02f7f53400a0d25
+```
 
 Sample response:
 ```
