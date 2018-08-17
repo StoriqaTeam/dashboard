@@ -1,23 +1,23 @@
 mod accounts;
 mod error;
 
-use environment::ServerEnvironment;
-use futures_cpupool::CpuPool;
-use std::sync::{Arc, Mutex};
-use futures::Future;
-use futures::future;
-use repos::{ReposError, TransactionsRepo, TransactionsRepoImpl};
-use types::{Connection, DbPool};
-use diesel::PgConnection;
-use failure::Fail;
-use models::Transaction;
-use models::*;
-use self::error::*;
 use self::accounts::Accounts;
 use self::accounts::Operation;
+use self::error::*;
+use bigdecimal::BigDecimal;
+use diesel::PgConnection;
+use environment::ServerEnvironment;
+use failure::Fail;
+use futures::future;
+use futures::Future;
+use futures_cpupool::CpuPool;
+use models::*;
+use repos::{ReposError, TransactionsRepo, TransactionsRepoImpl};
+use std::sync::{Arc, Mutex};
+use types::{Connection, DbPool};
 
 #[derive(Clone)]
-struct EthereumService {
+pub struct EthereumService {
     accounts: Arc<Mutex<Accounts>>,
     db_pool: DbPool,
     thread_pool: CpuPool,
@@ -31,10 +31,17 @@ impl EthereumService {
             ..
         } = env;
         EthereumService {
-            accounts: Arc::new(Mutex::new(Accounts::new(TokenAddress::new(env.config.ethereum.contract_address)))),
+            accounts: Arc::new(Mutex::new(Accounts::new(TokenAddress::new(
+                env.config.ethereum.contract_address.clone(),
+            )))),
             db_pool,
             thread_pool,
         }
+    }
+
+    pub fn get_balance(&self, address: &TokenAddress) -> BigDecimal {
+        let accounts = self.accounts.lock().unwrap();
+        accounts.get(address).unwrap_or(0.into())
     }
 
     pub fn sync(&self) -> impl Future<Item = (), Error = Error> {
@@ -65,8 +72,4 @@ impl EthereumService {
         future::result(self.db_pool.get())
             .map_err(|e| e.context(ErrorKind::DatabaseConnection).into())
     }
-
 }
-
-
-

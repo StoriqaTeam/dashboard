@@ -6,6 +6,7 @@ pub enum Route {
     CoinMarketCapHistory,
     CoinMarketCapHistoryAll,
     CoinMarketCapLast,
+    StqBalance,
 }
 
 pub fn create_route_parser() -> RouteParser<Route> {
@@ -19,6 +20,7 @@ pub fn create_route_parser() -> RouteParser<Route> {
     });
     // CoinMarketCapLast
     router.add_route(r"^/coinmarketcap/last$", || Route::CoinMarketCapLast);
-
+    // StqBalance
+    router.add_route(r"^/stq/balance$", || Route::StqBalance);
     router
 }

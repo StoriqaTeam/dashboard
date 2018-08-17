@@ -39,7 +39,6 @@ impl FetcherEnvironment {
         let db_pool = Pool::builder()
             .build(manager)
             .expect("Failed to create connection pool");
-
         FetcherEnvironment {
             config: Arc::new(config),
             http_client: client,

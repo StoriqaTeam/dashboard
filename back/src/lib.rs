@@ -45,8 +45,10 @@ mod types;
 
 use self::config::Config;
 use self::environment::FetcherEnvironment;
+use self::environment::ServerEnvironment;
 use self::fetchers::CoinmarketcapFetcher;
 use self::fetchers::EthereumFetcher;
+use self::services::EthereumService;
 use diesel::pg::PgConnection;
 use failure::Fail;
 use futures::{Future, Stream};
@@ -82,9 +84,26 @@ pub fn start_server(config: Config) {
     // Prepare CPU pool
     let cpu_pool = CpuPool::new(thread_count);
 
+    // Prepare ethereum service
+    let env = ServerEnvironment::new(config.clone());
+    let ethereum_service = EthereumService::new(env);
+    info!("Start syncing ethereum service");
+    match ethereum_service.sync().wait() {
+        Err(e) => {
+            log_error(&e);
+            panic!("Unable to sync ethereum service");
+        }
+        _ => (),
+    };
+    info!("Finished syncing ethereum service");
+
     let new_service = move || {
-        let controller =
-            controller::ControllerImpl::new(db_pool.clone(), cpu_pool.clone(), config.clone());
+        let controller = controller::ControllerImpl::new(
+            db_pool.clone(),
+            cpu_pool.clone(),
+            config.clone(),
+            ethereum_service.clone(),
+        );
 
         // Prepare application
         let app = Application::<Error>::new(controller);
@@ -162,7 +181,7 @@ fn create_coinmarketcap_fetcher(config: Config) -> impl Future<Item = (), Error 
         .for_each(|_| futures::future::ok(()))
 }
 
-fn log_error(e: &Fail) {
+pub fn log_error(e: &Fail) {
     let mut err = e;
     loop {
         error!("{}", err);

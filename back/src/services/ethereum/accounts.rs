@@ -1,6 +1,6 @@
 use bigdecimal::{BigDecimal, Signed};
-use std::collections::HashMap;
 use models::*;
+use std::collections::HashMap;
 
 #[derive(Clone)]
 pub struct Accounts {
@@ -24,13 +24,22 @@ impl Accounts {
         }
     }
 
+    pub fn get(&self, address: &TokenAddress) -> Option<BigDecimal> {
+        self.data.get(address).cloned()
+    }
+
     pub fn apply(&mut self, txs: &[Transaction], opetation: Operation) {
         let sign: BigDecimal = match opetation {
             Operation::Apply => 1.into(),
             Operation::Rollback => BigDecimal::from(-1),
         };
         for tx in txs {
-            let Transaction { from_address, to_address, value, .. } = tx;
+            let Transaction {
+                from_address,
+                to_address,
+                value,
+                ..
+            } = tx;
             if *from_address != self.contract_address {
                 let balance = self.data.entry(from_address.clone()).or_insert(0u8.into());
                 *balance -= value * sign.clone();
