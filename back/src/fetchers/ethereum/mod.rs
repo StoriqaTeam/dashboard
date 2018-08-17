@@ -4,7 +4,7 @@ use self::error::*;
 use clients::EthereumClient;
 use clients::EthereumClientError;
 use diesel::pg::PgConnection;
-use environment::Environment;
+use environment::FetcherEnvironment;
 use failure::Fail;
 use futures::future;
 use futures::future::Either;
@@ -31,7 +31,7 @@ pub struct EthereumFetcher {
 }
 
 impl EthereumFetcher {
-    pub fn new(env: Environment) -> Self {
+    pub fn new(env: FetcherEnvironment) -> Self {
         let duration = Duration::from_secs(env.config.ethereum.fetcher_tick_seconds as u64);
         let thread_pool = CpuPool::new(env.config.fetcher.thread_count as usize);
         EthereumFetcher {

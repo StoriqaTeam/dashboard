@@ -27,6 +27,7 @@ pub struct Ethereum {
     pub transfer_topic: String,
     pub api_key: String,
     pub fetcher_tick_seconds: usize,
+    pub average_block_time_secs: u8,
     pub blocks_per_fetch: i64,
 }
 

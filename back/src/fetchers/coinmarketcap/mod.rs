@@ -4,7 +4,7 @@ use self::error::*;
 use chrono::prelude::*;
 use chrono::Duration;
 use diesel::pg::PgConnection;
-use environment::Environment;
+use environment::FetcherEnvironment;
 use failure::Error as FailureError;
 use failure::Fail;
 use futures::future;
@@ -38,7 +38,7 @@ pub struct CoinmarketcapFetcher {
 }
 
 impl CoinmarketcapFetcher {
-    pub fn new(env: Environment) -> Self {
+    pub fn new(env: FetcherEnvironment) -> Self {
         let duration = StdDuration::from_secs(env.config.coinmarketcap.fetcher_tick_seconds as u64);
         let thread_pool = CpuPool::new(env.config.fetcher.thread_count as usize);
         let mut connector = HttpsConnector::new(env.config.http.dns_threads).unwrap();
@@ -126,7 +126,8 @@ impl CoinmarketcapFetcher {
                         Either::B(future::ok(CoinMarketCap::default()))
                     }
                 })
-            }).and_then(|(s, caps)| s.fetch_from_coinmarketcap_repo(|repo| repo.add(caps.to_vec())))
+            })
+            .and_then(|(s, caps)| s.fetch_from_coinmarketcap_repo(|repo| repo.add(caps.to_vec())))
             .map(|_| ())
             .map_err(|(_, e)| e)
     }
