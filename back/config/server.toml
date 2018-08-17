@@ -19,3 +19,6 @@ api_key = "75d4d84bc950405283cf797cb7531402"
 
 [coinmarketcap]
 fetcher_tick_seconds = 10
+points_count = 500
+
+
