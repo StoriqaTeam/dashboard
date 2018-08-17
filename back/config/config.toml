@@ -17,6 +17,7 @@ transfer_topic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523
 fetcher_tick_seconds = 2
 blocks_per_fetch = 1000
 average_block_time_secs = 17
+histogram_break_points = [500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
 api_key = ""
 
 [coinmarketcap]
