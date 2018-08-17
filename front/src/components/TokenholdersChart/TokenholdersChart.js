@@ -169,7 +169,7 @@ class TokenholdersChart extends Component<PropsType, StateType> {
       <div className="TokenholdersChart widget">
         <div className="titleWrapper">
           <h2>Tokenholders</h2>
-          {formatNumValue(null, { value: 48.983, delta: 238 })}
+          {/* formatNumValue(null, { value: 48.983, delta: 238 }) */}
         </div>
         <div className="tokenholdersChartWrapper">
           <canvas id="tokenholdersChart" />

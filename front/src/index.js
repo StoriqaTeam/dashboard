@@ -22,7 +22,7 @@ class App extends Component {
         </div>
         <div className="row2">
           <TokenholdersChart />
-          <div className="widget" />
+          <div className="widget" style={{ width: "41.65%" }} />
           <ExchangesStats />
         </div>
       </div>
