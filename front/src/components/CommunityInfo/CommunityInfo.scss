@@ -9,7 +9,7 @@
     span {
       opacity: 0.48;
       font-family: "IBMPlexSansCond";
-      font-size: 14px;
+      font-size: 1.13vw;
       font-weight: bold;
       font-style: normal;
       font-stretch: normal;
@@ -30,7 +30,7 @@
       span {
         opacity: 0.34;
         font-family: "IBMPlexSansCond";
-        font-size: 14px;
+        font-size: 1.13vw;
         font-weight: bold;
         font-style: normal;
         font-stretch: normal;
@@ -44,12 +44,12 @@
       justify-content: space-between;
 
       img {
-        margin-left: 2px;
+        margin-left: 0.16vw;
       }
     }
   }
 
   .statsRow + .statsRow {
-    margin-top: 12px;
+    margin-top: 0.96vw;
   }
 }

@@ -190,28 +190,28 @@ class Marketcap extends Component<PropsType> {
             yAxisID: "cap-y-axis",
             data: data.cap.data,
             borderColor: "rgba(109, 179, 228, 0.7)",
-            borderWidth: 1,
+            borderWidth: 2,
             backgroundColor: "transparent"
           },
           {
             yAxisID: "btc-y-axis",
             data: data.btc.data,
             borderColor: "rgba(255, 157, 31, 0.7)",
-            borderWidth: 1,
+            borderWidth: 2,
             backgroundColor: "transparent"
           },
           {
             yAxisID: "usd-y-axis",
             data: data.usd.data,
             borderColor: "rgba(0, 251, 182, 0.7)",
-            borderWidth: 1,
+            borderWidth: 2,
             backgroundColor: "transparent"
           },
           {
             yAxisID: "eth-y-axis",
             data: data.eth.data,
             borderColor: "rgba(238, 89, 34, 0.7)",
-            borderWidth: 1,
+            borderWidth: 2,
             spanGaps: false,
             backgroundColor: "transparent"
           }

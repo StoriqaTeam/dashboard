@@ -24,7 +24,7 @@ body {
 
 h2 {
   font-family: "IBMPlexSansCond";
-  font-size: 16px;
+  font-size: 1.3vw;
   font-weight: bold;
   font-style: normal;
   font-stretch: normal;
@@ -43,23 +43,21 @@ h2 {
   .row1 {
     display: flex;
     flex: 1;
-    // grid-template-columns: 41.65% 25% 16.7% 16.7%;
   }
   .row2 {
     display: flex;
     flex: 1;
-    // grid-template-columns: 41.65% 41.65% 16.7%;
   }
 }
 
 .widget {
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: 15px;
-  padding-bottom: 15px;
-  border-radius: 4px;
+  padding-left: 1.1vw;
+  padding-right: 1.2vw;
+  padding-top: 1.2vw;
+  padding-bottom: 1.2vw;
+  border-radius: 0.32vw;
   background-color: #1f2b3c;
-  margin: 8px;
+  margin: 0.5vw;
 }
 
 .row {
@@ -70,7 +68,7 @@ h2 {
 
   .title {
     opacity: 0.34;
-    font-size: 14px;
+    font-size: 1.13vw;
     font-weight: bold;
     font-style: normal;
     font-stretch: normal;
@@ -95,7 +93,7 @@ h2 {
   }
 
   .value {
-    font-size: 14px;
+    font-size: 1.13vw;
     font-weight: normal;
     font-style: normal;
     font-stretch: normal;
@@ -113,7 +111,7 @@ h2 {
 }
 
 .subtitle {
-  font-size: 12px;
+  font-size: 0.96vw;
   font-weight: normal;
   font-style: normal;
   font-stretch: normal;
@@ -123,6 +121,6 @@ h2 {
   justify-content: flex-end;
 
   span + span {
-    margin-left: 20px;
+    margin-left: 1.6vw;
   }
 }
