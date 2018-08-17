@@ -16,7 +16,7 @@ use repos::{ReposError, TransactionsRepo, TransactionsRepoImpl};
 use std::sync::{Arc, Mutex};
 use types::{Connection, DbPool};
 
-pub use self::accounts::Bucket;
+pub use self::accounts::TokenHoldersStats;
 
 #[derive(Clone)]
 pub struct EthereumService {
@@ -48,9 +48,9 @@ impl EthereumService {
         accounts.get(address).unwrap_or(0.into())
     }
 
-    pub fn histogram(&self) -> Result<Vec<Bucket>, Error> {
+    pub fn tokenholder_stats(&self) -> Result<TokenHoldersStats, Error> {
         let accs = self.accounts.lock().unwrap();
-        accs.histogram(&self.break_points)
+        accs.tokenholder_stats(&self.break_points)
     }
 
     pub fn sync(&self) -> impl Future<Item = (), Error = Error> {

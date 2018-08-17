@@ -25,6 +25,12 @@ pub struct Bucket {
     delta: Option<f64>,
 }
 
+#[derive(Debug, Serialize, Clone)]
+pub struct TokenHoldersStats {
+    buckets: Vec<Bucket>,
+    tokenholders: u64,
+}
+
 impl Accounts {
     pub fn new(contract_address: TokenAddress) -> Self {
         Accounts {
@@ -38,7 +44,7 @@ impl Accounts {
         self.data.get(address).cloned()
     }
 
-    pub fn histogram(&self, break_points: &[u64]) -> Result<Vec<Bucket>, Error> {
+    pub fn tokenholder_stats(&self, break_points: &[u64]) -> Result<TokenHoldersStats, Error> {
         let mut break_points = break_points.to_vec();
         break_points.sort();
         let mut store: HashMap<u64, Bucket> = HashMap::new();
@@ -72,9 +78,11 @@ impl Accounts {
             let value = value.to_u64().ok_or(
                 format_err!("{:?}, Bigdecimal {} -> u64", key, value.clone()).context(ErrorKind::Arithmetics)
             )?;
-            let break_point = self.get_break_point(break_points.clone(), value);
-            let value_mut_ref = store.get_mut(&break_point).unwrap();
-            value_mut_ref.value += 1.0;
+            if value >=1 {
+                let break_point = self.get_break_point(break_points.clone(), value);
+                let value_mut_ref = store.get_mut(&break_point).unwrap();
+                value_mut_ref.value += 1.0;
+            }
         }
         let mut total = 0.0;
         let keys: Vec<u64> = store.keys().cloned().collect();
@@ -85,17 +93,20 @@ impl Accounts {
             let value_mut_ref = store.get_mut(key).unwrap();
             value_mut_ref.value /= total;
         }
-        Ok(store.values().cloned().collect())
+        let mut buckets: Vec<Bucket> = store.values().cloned().collect();
+        buckets.sort_by_key(|bucket| bucket.to);
+        Ok(TokenHoldersStats {
+            buckets,
+            tokenholders: total as u64,
+        })
     }
 
     // expected sorted non-empty break_points
     fn get_break_point(&self, break_points: Vec<u64>, value: u64) -> u64 {
-        let mut prev_point = break_points.get(0).cloned().expect("Non-empty breakpoints expected");
         for break_point in break_points {
-            if value > break_point {
-                return prev_point;
+            if value < break_point {
+                return break_point;
             }
-            prev_point = break_point;
         }
         u64::max_value()
     }
