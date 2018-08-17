@@ -5,17 +5,16 @@
 use super::error::*;
 use diesel;
 use diesel::connection::AnsiTransactionManager;
-use diesel::dsl::max;
+use diesel::dsl::{count, max};
 use diesel::pg::Pg;
 use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
 use diesel::Connection;
 use failure::Fail;
+use std::collections::HashMap;
 
 use models::*;
 use schema::transactions::dsl::*;
-
-use super::MAX_ENTITIES_FOR_INSERT;
 
 pub trait TransactionsRepo {
     fn list(&self, from: Option<i64>, to: Option<i64>) -> Result<Vec<Transaction>, Error>;
@@ -75,14 +74,25 @@ impl<'a, T: Connection<Backend = Pg, TransactionManager = AnsiTransactionManager
             .db_conn
             .transaction::<Vec<Transaction>, diesel::result::Error, _>(|| {
                 let mut res: Vec<Transaction> = Vec::new();
-                for tx_chunk in txs.chunks(MAX_ENTITIES_FOR_INSERT) {
-                    let tx_chunk = tx_chunk.to_vec();
-                    let query = diesel::insert_into(transactions)
-                        .values(&tx_chunk)
-                        .on_conflict(transaction_hash)
-                        .do_nothing();
-                    let mut db_txs = query.get_results::<Transaction>(self.db_conn)?;
-                    res.append(&mut db_txs);
+                let mut groups: HashMap<String, Vec<NewTransaction>> = HashMap::new();
+                for tx in txs.iter() {
+                    let value_ref = groups
+                        .entry(tx.transaction_hash.clone())
+                        .or_insert(Vec::new());
+                    value_ref.push(tx.clone());
+                }
+                for key in groups.keys() {
+                    let tx_chunk = groups[key].clone();
+                    let count = transactions
+                        .select(count(id))
+                        .filter(transaction_hash.eq(key))
+                        .limit(1)
+                        .get_result::<i64>(self.db_conn)?;
+                    if count == 0 {
+                        let query = diesel::insert_into(transactions).values(tx_chunk);
+                        let mut db_txs = query.get_results::<Transaction>(self.db_conn)?;
+                        res.append(&mut db_txs);
+                    }
                 }
                 Ok(res)
             });

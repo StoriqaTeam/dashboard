@@ -68,7 +68,8 @@ impl<
                             let capitalization_repo = CoinMarketCapsRepoImpl::new(&*conn);
                             capitalization_repo.list(from, to)
                         })
-                }).map_err(|e| {
+                })
+                .map_err(|e| {
                     e.context("Service CoinMarketCapsService, get endpoint error occured.")
                         .into()
                 }),
@@ -96,7 +97,8 @@ impl<
                                     .collect()
                             })
                         })
-                }).map_err(|e| {
+                })
+                .map_err(|e| {
                     e.context("Service CoinMarketCapsService, get endpoint error occured.")
                         .into()
                 }),
@@ -128,7 +130,8 @@ impl<
                                 }
                             })
                         })
-                }).map_err(|e| {
+                })
+                .map_err(|e| {
                     e.context("Service CoinMarketCapsService, last endpoint error occured.")
                         .into()
                 }),

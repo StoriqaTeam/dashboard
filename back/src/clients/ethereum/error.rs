@@ -1,4 +1,3 @@
-use super::responses::Log;
 use std::fmt;
 use std::fmt::Display;
 
