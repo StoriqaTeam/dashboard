@@ -15,7 +15,7 @@ pub enum Operation {
     Rollback,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Bucket {
     from: u64,
     to: u64,
@@ -36,8 +36,8 @@ impl Accounts {
         self.data.get(address).cloned()
     }
 
-    pub fn histogram(&self, break_points: Vec<u64>) -> Vec<Bucket> {
-        let mut break_points = break_points.clone();
+    pub fn histogram(&self, break_points: &[u64]) -> Vec<Bucket> {
+        let mut break_points = break_points.to_vec();
         break_points.sort();
         let mut store: HashMap<u64, Bucket> = HashMap::new();
         let mut from_point = 0;
@@ -63,24 +63,34 @@ impl Accounts {
                 delta: None,
             },
         );
+        info!("TTIITITITIITI");
         for key in self.data.keys() {
+            info!("Before key");
             let value = self.data.get(&key).unwrap();
+            info!("After key, {:?} - {}", key, value);
             let power: BigDecimal = 10u64.pow(18).into();
             let value: BigDecimal = value / power;
-            let value = value.to_u64().unwrap();
-            let break_point = self.get_break_point(break_points.clone(), value);
-            let value_mut_ref = store.get_mut(&break_point).unwrap();
-            value_mut_ref.value += 1.0;
+            info!("After key 2, {}", value);
+            if let Some(value) = value.to_u64() {
+                let break_point = self.get_break_point(break_points.clone(), value);
+                info!("After key 3, bp: {}", break_point);
+                let value_mut_ref = store.get_mut(&break_point).unwrap();
+                info!("After mut");
+                value_mut_ref.value += 1.0;
+            }
         }
+        info!("Here");
         let mut total = 0.0;
         let keys: Vec<u64> = store.keys().cloned().collect();
         for key in keys.iter() {
             total += store[key].value;
         }
+        info!("after");
         for key in keys.iter() {
             let value_mut_ref = store.get_mut(key).unwrap();
             value_mut_ref.value /= total;
         }
+        info!("after that");
         store.values().cloned().collect()
     }
 

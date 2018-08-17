@@ -16,11 +16,14 @@ use repos::{ReposError, TransactionsRepo, TransactionsRepoImpl};
 use std::sync::{Arc, Mutex};
 use types::{Connection, DbPool};
 
+pub use self::accounts::Bucket;
+
 #[derive(Clone)]
 pub struct EthereumService {
     accounts: Arc<Mutex<Accounts>>,
     db_pool: DbPool,
     thread_pool: CpuPool,
+    break_points: Vec<u64>,
 }
 
 impl EthereumService {
@@ -36,12 +39,18 @@ impl EthereumService {
             )))),
             db_pool,
             thread_pool,
+            break_points: env.config.ethereum.histogram_break_points.clone(),
         }
     }
 
     pub fn get_balance(&self, address: &TokenAddress) -> BigDecimal {
         let accounts = self.accounts.lock().unwrap();
         accounts.get(address).unwrap_or(0.into())
+    }
+
+    pub fn histogram(&self) -> Vec<Bucket> {
+        let accs = self.accounts.lock().unwrap();
+        accs.histogram(&self.break_points)
     }
 
     pub fn sync(&self) -> impl Future<Item = (), Error = Error> {

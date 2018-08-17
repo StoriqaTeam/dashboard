@@ -170,6 +170,15 @@ impl<
                 }
             }
 
+            // GET /stq/balance
+            (&Method::GET, Some(Route::StqTokenholdersHistogram)) => {
+                let hist = self.ethereum_service.histogram();
+                info!("hist: {:?}", hist);
+                serialize_future(future::ok::<_, failure::Error>(
+                    self.ethereum_service.histogram(),
+                ))
+            }
+
             // Fallback
             (m, _) => Box::new(future::err(
                 format_err!(
