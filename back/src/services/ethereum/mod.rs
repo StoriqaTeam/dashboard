@@ -35,7 +35,7 @@ impl EthereumService {
         } = env;
         EthereumService {
             accounts: Arc::new(Mutex::new(Accounts::new(TokenAddress::new(
-                env.config.ethereum.contract_address.clone(),
+                env.config.ethereum.contract_address[2..].to_string().to_lowercase(),
             )))),
             db_pool,
             thread_pool,
@@ -48,7 +48,7 @@ impl EthereumService {
         accounts.get(address).unwrap_or(0.into())
     }
 
-    pub fn histogram(&self) -> Vec<Bucket> {
+    pub fn histogram(&self) -> Result<Vec<Bucket>, Error> {
         let accs = self.accounts.lock().unwrap();
         accs.histogram(&self.break_points)
     }

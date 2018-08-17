@@ -174,8 +174,8 @@ impl<
             (&Method::GET, Some(Route::StqTokenholdersHistogram)) => {
                 let hist = self.ethereum_service.histogram();
                 info!("hist: {:?}", hist);
-                serialize_future(future::ok::<_, failure::Error>(
-                    self.ethereum_service.histogram(),
+                serialize_future(future::result::<_, failure::Error>(
+                    self.ethereum_service.histogram().map_err(|e| e.into()),
                 ))
             }
 

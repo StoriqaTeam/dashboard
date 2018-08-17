@@ -1,6 +1,8 @@
+use super::error::*;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive};
 use models::*;
 use std::collections::HashMap;
+use failure::Fail;
 
 #[derive(Clone)]
 pub struct Accounts {
@@ -36,7 +38,7 @@ impl Accounts {
         self.data.get(address).cloned()
     }
 
-    pub fn histogram(&self, break_points: &[u64]) -> Vec<Bucket> {
+    pub fn histogram(&self, break_points: &[u64]) -> Result<Vec<Bucket>, Error> {
         let mut break_points = break_points.to_vec();
         break_points.sort();
         let mut store: HashMap<u64, Bucket> = HashMap::new();
@@ -63,40 +65,32 @@ impl Accounts {
                 delta: None,
             },
         );
-        info!("TTIITITITIITI");
         for key in self.data.keys() {
-            info!("Before key");
             let value = self.data.get(&key).unwrap();
-            info!("After key, {:?} - {}", key, value);
             let power: BigDecimal = 10u64.pow(18).into();
             let value: BigDecimal = value / power;
-            info!("After key 2, {}", value);
-            if let Some(value) = value.to_u64() {
-                let break_point = self.get_break_point(break_points.clone(), value);
-                info!("After key 3, bp: {}", break_point);
-                let value_mut_ref = store.get_mut(&break_point).unwrap();
-                info!("After mut");
-                value_mut_ref.value += 1.0;
-            }
+            let value = value.to_u64().ok_or(
+                format_err!("{:?}, Bigdecimal {} -> u64", key, value.clone()).context(ErrorKind::Arithmetics)
+            )?;
+            let break_point = self.get_break_point(break_points.clone(), value);
+            let value_mut_ref = store.get_mut(&break_point).unwrap();
+            value_mut_ref.value += 1.0;
         }
-        info!("Here");
         let mut total = 0.0;
         let keys: Vec<u64> = store.keys().cloned().collect();
         for key in keys.iter() {
             total += store[key].value;
         }
-        info!("after");
         for key in keys.iter() {
             let value_mut_ref = store.get_mut(key).unwrap();
             value_mut_ref.value /= total;
         }
-        info!("after that");
-        store.values().cloned().collect()
+        Ok(store.values().cloned().collect())
     }
 
-    // expected sorted break_points
+    // expected sorted non-empty break_points
     fn get_break_point(&self, break_points: Vec<u64>, value: u64) -> u64 {
-        let mut prev_point = 0;
+        let mut prev_point = break_points.get(0).cloned().expect("Non-empty breakpoints expected");
         for break_point in break_points {
             if value > break_point {
                 return prev_point;

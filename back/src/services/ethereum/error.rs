@@ -16,6 +16,8 @@ pub enum ErrorKind {
     DatabaseConnection,
     #[fail(display = "Ethereum service: Transactions repo error")]
     TransactionsRepo,
+    #[fail(display = "Ethereum service: Error working with number")]
+    Arithmetics,
 }
 
 impl Fail for Error {
