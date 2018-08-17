@@ -130,7 +130,8 @@ impl CoinMarketCap {
                         volume_usd,
                     }
                 },
-            ).collect()
+            )
+            .collect()
     }
 }
 
@@ -209,8 +210,7 @@ impl CoinMarketCapValueExt {
                     delta: current.capitalization.map(|capitalization| {
                         (capitalization as f64
                             / before.capitalization.unwrap_or(capitalization) as f64
-                            - 1f64)
-                            * 100f64
+                            - 1f64) * 100f64
                     }),
                 },
                 eth: ValueExt {

@@ -16,11 +16,14 @@ use repos::{ReposError, TransactionsRepo, TransactionsRepoImpl};
 use std::sync::{Arc, Mutex};
 use types::{Connection, DbPool};
 
+pub use self::accounts::TokenHoldersStats;
+
 #[derive(Clone)]
 pub struct EthereumService {
     accounts: Arc<Mutex<Accounts>>,
     db_pool: DbPool,
     thread_pool: CpuPool,
+    break_points: Vec<u64>,
 }
 
 impl EthereumService {
@@ -32,16 +35,22 @@ impl EthereumService {
         } = env;
         EthereumService {
             accounts: Arc::new(Mutex::new(Accounts::new(TokenAddress::new(
-                env.config.ethereum.contract_address.clone(),
+                env.config.ethereum.contract_address[2..].to_string().to_lowercase(),
             )))),
             db_pool,
             thread_pool,
+            break_points: env.config.ethereum.histogram_break_points.clone(),
         }
     }
 
     pub fn get_balance(&self, address: &TokenAddress) -> BigDecimal {
         let accounts = self.accounts.lock().unwrap();
         accounts.get(address).unwrap_or(0.into())
+    }
+
+    pub fn tokenholder_stats(&self) -> Result<TokenHoldersStats, Error> {
+        let accs = self.accounts.lock().unwrap();
+        accs.tokenholder_stats(&self.break_points)
     }
 
     pub fn sync(&self) -> impl Future<Item = (), Error = Error> {
