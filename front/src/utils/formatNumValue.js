@@ -19,7 +19,7 @@ const formatNumValue = (title: ?string, numValue: ?NumValueType): Node => {
 
   return (
     <div className="row">
-      <div className="title">{title}</div>
+      {title && <div className="title">{title}</div>}
       <div className="value">
         {formatNumber(value)}{" "}
         {delta &&

@@ -1,11 +1,12 @@
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
 
-import { MarketcapChart } from "./components/MarketcapChart";
-import { TokenInfo } from "./components/TokenInfo";
-import { CommunityInfo } from "./components/CommunityInfo";
-import { StoreStats } from "./components/StoreStats";
-import { ExchangesStats } from "./components/ExchangesStats";
+import { MarketcapChart } from "components/MarketcapChart";
+import { TokenInfo } from "components/TokenInfo";
+import { CommunityInfo } from "components/CommunityInfo";
+import { StoreStats } from "components/StoreStats";
+import { ExchangesStats } from "components/ExchangesStats";
+import { TokenholdersChart } from "components/TokenholdersChart";
 
 import "./index.scss";
 
@@ -20,7 +21,7 @@ class App extends Component {
           <CommunityInfo />
         </div>
         <div className="row2">
-          <div className="widget" />
+          <TokenholdersChart />
           <div className="widget" />
           <ExchangesStats />
         </div>
