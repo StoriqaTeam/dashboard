@@ -162,19 +162,19 @@ impl CoinMarketCapValueExt {
                 usd: ValueExt {
                     value: current.price_usd,
                     delta: current.price_usd.map(|price_usd| {
-                        (price_usd - before.price_usd.unwrap_or_default()) / price_usd * 100f64
+                        (price_usd / before.price_usd.unwrap_or(price_usd) - 1f64) * 100f64
                     }),
                 },
                 eth: ValueExt {
                     value: current.price_eth,
                     delta: current.price_eth.map(|price_eth| {
-                        (price_eth - before.price_eth.unwrap_or_default()) / price_eth * 100f64
+                        (price_eth / before.price_eth.unwrap_or(price_eth) - 1f64) * 100f64
                     }),
                 },
                 btc: ValueExt {
                     value: current.price_btc,
                     delta: current.price_btc.map(|price_btc| {
-                        (price_btc - before.price_btc.unwrap_or_default()) / price_btc * 100f64
+                        (price_btc / before.price_btc.unwrap_or(price_btc) - 1f64) * 100f64
                     }),
                 },
             },
@@ -182,8 +182,7 @@ impl CoinMarketCapValueExt {
                 usd: ValueExt {
                     value: current.volume_usd.map(|v| v as f64),
                     delta: current.volume_usd.map(|volume_usd| {
-                        (volume_usd - before.volume_usd.unwrap_or_default()) as f64
-                            / volume_usd as f64
+                        (volume_usd as f64 / before.volume_usd.unwrap_or(volume_usd) as f64 - 1f64)
                             * 100f64
                     }),
                 },
@@ -208,8 +207,9 @@ impl CoinMarketCapValueExt {
                 usd: ValueExt {
                     value: current.capitalization.map(|v| v as f64),
                     delta: current.capitalization.map(|capitalization| {
-                        (capitalization - before.capitalization.unwrap_or_default()) as f64
-                            / capitalization as f64
+                        (capitalization as f64
+                            / before.capitalization.unwrap_or(capitalization) as f64
+                            - 1f64)
                             * 100f64
                     }),
                 },
