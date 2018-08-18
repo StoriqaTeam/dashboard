@@ -56,11 +56,16 @@ impl EthereumService {
     pub fn tokenholder_stats(&self) -> impl Future<Item = TokenHoldersStats, Error = Error> {
         let self_clone = self.clone();
         let self_clone2 = self.clone();
-        self.use_transactions_repo(move |repo| {
-            let max_block = repo.max_block()?.unwrap_or(0);
-            let base_block = max_block - (self_clone.delta_blocks as i64);
-            repo.list(Some(base_block), None)
-        }).map_err(|e| e.context(ErrorKind::TransactionsRepo).into())
+        let self_clone3 = self.clone();
+        self.sync()
+            .and_then(move |_| {
+                self_clone3.use_transactions_repo(move |repo| {
+                    let max_block = repo.max_block()?.unwrap_or(0);
+                    let base_block = max_block - (self_clone.delta_blocks as i64);
+                    repo.list(Some(base_block), None)
+                })
+            })
+            .map_err(|e| e.context(ErrorKind::TransactionsRepo).into())
             .and_then(move |delta_transactions| {
                 let accs = self_clone2.accounts.lock().unwrap();
                 accs.tokenholder_stats(&self_clone2.break_points, &delta_transactions)
