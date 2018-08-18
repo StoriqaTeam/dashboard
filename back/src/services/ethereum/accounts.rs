@@ -111,7 +111,6 @@ impl Accounts {
                 delta: None,
             },
         );
-        info!("Before iter");
         for key in self.data.keys() {
             let value = self.data.get(&key).cloned().unwrap();
             if value >= 1.0 {
@@ -120,7 +119,6 @@ impl Accounts {
                 value_mut_ref.value += 1.0;
             }
         }
-        info!("After iter");
         let mut total = 0.0;
         let keys: Vec<u64> = store.keys().cloned().collect();
         for key in keys.iter() {
@@ -161,6 +159,7 @@ impl Accounts {
                 from_address,
                 to_address,
                 value,
+                block,
                 ..
             } = tx;
             if *from_address != self.contract_address {
@@ -169,9 +168,12 @@ impl Accounts {
                 *balance -= float_value * sign.clone();
             }
             if *to_address != self.contract_address {
-                let balance = self.data.entry(from_address.clone()).or_insert(0.0f64);
+                let balance = self.data.entry(to_address.clone()).or_insert(0.0f64);
                 let float_value: f64 = (value / power_ref.clone()).to_f64().expect(&format!("Error casting Bigdecimal {} to f64", value / power_ref.clone()));
-                *balance -= float_value * sign.clone();
+                *balance += float_value * sign.clone();
+            }
+            if *block > self.block {
+                self.block = *block;
             }
         }
     }
