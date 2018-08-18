@@ -26,6 +26,7 @@ pub struct Bucket {
 }
 
 #[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct TokenHoldersStats {
     buckets: Vec<Bucket>,
     tokenholders: u64,
@@ -109,10 +110,10 @@ impl Accounts {
                 delta: None,
             },
         );
+        let power: BigDecimal = 10u64.pow(18).into();
         for key in self.data.keys() {
             let value = self.data.get(&key).unwrap();
-            let power: BigDecimal = 10u64.pow(18).into();
-            let value: BigDecimal = value / power;
+            let value: BigDecimal = value / power.clone();
             let value = value.to_u64().ok_or(
                 format_err!("{:?}, Bigdecimal {} -> u64", key, value.clone())
                     .context(ErrorKind::Arithmetics),
