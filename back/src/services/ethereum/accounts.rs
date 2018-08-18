@@ -3,11 +3,12 @@ use bigdecimal::{BigDecimal, Signed, ToPrimitive};
 use failure::Fail;
 use models::*;
 use std::collections::HashMap;
+use std::f64::MAX as F64_MAX;
 
 #[derive(Clone)]
 pub struct Accounts {
     pub block: i64,
-    data: HashMap<TokenAddress, BigDecimal>,
+    data: HashMap<TokenAddress, f64>,
     contract_address: TokenAddress,
 }
 
@@ -63,7 +64,7 @@ impl Accounts {
         }
     }
 
-    pub fn get(&self, address: &TokenAddress) -> Option<BigDecimal> {
+    pub fn get(&self, address: &TokenAddress) -> Option<f64> {
         self.data.get(address).cloned()
     }
 
@@ -110,20 +111,16 @@ impl Accounts {
                 delta: None,
             },
         );
-        let power: BigDecimal = 10u64.pow(18).into();
+        info!("Before iter");
         for key in self.data.keys() {
-            let value = self.data.get(&key).unwrap();
-            let value: BigDecimal = value / power.clone();
-            let value = value.to_u64().ok_or(
-                format_err!("{:?}, Bigdecimal {} -> u64", key, value.clone())
-                    .context(ErrorKind::Arithmetics),
-            )?;
-            if value >= 1 {
+            let value = self.data.get(&key).cloned().unwrap();
+            if value >= 1.0 {
                 let break_point = self.get_break_point(break_points.clone(), value);
                 let value_mut_ref = store.get_mut(&break_point).unwrap();
                 value_mut_ref.value += 1.0;
             }
         }
+        info!("After iter");
         let mut total = 0.0;
         let keys: Vec<u64> = store.keys().cloned().collect();
         for key in keys.iter() {
@@ -143,9 +140,9 @@ impl Accounts {
     }
 
     // expected sorted non-empty break_points
-    fn get_break_point(&self, break_points: Vec<u64>, value: u64) -> u64 {
+    fn get_break_point(&self, break_points: Vec<u64>, value: f64) -> u64 {
         for break_point in break_points {
-            if value < break_point {
+            if value < break_point as f64 {
                 return break_point;
             }
         }
@@ -153,10 +150,12 @@ impl Accounts {
     }
 
     pub fn apply(&mut self, txs: &[Transaction], opetation: Operation) {
-        let sign: BigDecimal = match opetation {
-            Operation::Apply => 1.into(),
-            Operation::Rollback => BigDecimal::from(-1),
+        let sign: f64 = match opetation {
+            Operation::Apply => 1.0,
+            Operation::Rollback => -1.0,
         };
+        let power: BigDecimal = 10u64.pow(18).into();
+        let power_ref = &power;
         for tx in txs {
             let Transaction {
                 from_address,
@@ -165,12 +164,14 @@ impl Accounts {
                 ..
             } = tx;
             if *from_address != self.contract_address {
-                let balance = self.data.entry(from_address.clone()).or_insert(0u8.into());
-                *balance -= value * sign.clone();
+                let balance = self.data.entry(from_address.clone()).or_insert(0.0f64);
+                let float_value: f64 = (value / power_ref.clone()).to_f64().expect(&format!("Error casting Bigdecimal {} to f64", value / power_ref.clone()));
+                *balance -= float_value * sign.clone();
             }
             if *to_address != self.contract_address {
-                let balance = self.data.entry(to_address.clone()).or_insert(0u8.into());
-                *balance += value * sign.clone();
+                let balance = self.data.entry(from_address.clone()).or_insert(0.0f64);
+                let float_value: f64 = (value / power_ref.clone()).to_f64().expect(&format!("Error casting Bigdecimal {} to f64", value / power_ref.clone()));
+                *balance -= float_value * sign.clone();
             }
         }
     }

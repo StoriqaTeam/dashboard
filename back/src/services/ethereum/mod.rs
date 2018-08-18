@@ -48,9 +48,9 @@ impl EthereumService {
         }
     }
 
-    pub fn get_balance(&self, address: &TokenAddress) -> BigDecimal {
+    pub fn get_balance(&self, address: &TokenAddress) -> f64 {
         let accounts = self.accounts.lock().unwrap();
-        accounts.get(address).unwrap_or(0.into())
+        accounts.get(address).unwrap_or(0.0)
     }
 
     pub fn tokenholder_stats(&self) -> impl Future<Item = TokenHoldersStats, Error = Error> {
