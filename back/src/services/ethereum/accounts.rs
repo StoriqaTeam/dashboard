@@ -31,7 +31,7 @@ pub struct Bucket {
 pub struct TokenHoldersStats {
     buckets: Vec<Bucket>,
     tokenholders: u64,
-    tokenholders_delta: Option<f64>,
+    tokenholders_delta: Option<i64>,
 }
 
 impl TokenHoldersStats {
@@ -46,11 +46,11 @@ impl TokenHoldersStats {
         for (i, bucket) in self.buckets.iter_mut().enumerate() {
             let base_value = base.buckets[i].value;
             if base_value > 0.0 {
-                bucket.delta = Some(bucket.value / base_value);
+                bucket.delta = Some(bucket.value - base_value);
             }
         }
         if base.tokenholders > 0 {
-            self.tokenholders_delta = Some((self.tokenholders as f64) / (base.tokenholders as f64));
+            self.tokenholders_delta = Some(self.tokenholders as i64 - base.tokenholders as i64);
         }
     }
 }
