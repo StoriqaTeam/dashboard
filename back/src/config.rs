@@ -32,6 +32,7 @@ pub struct Ethereum {
     pub blocks_per_fetch: i64,
     pub histogram_break_points: Vec<u64>,
     pub delta_time_secs: usize,
+    pub tokenholders_count_bucket_block_width: usize,
 }
 
 #[derive(Debug, Deserialize, Clone)]

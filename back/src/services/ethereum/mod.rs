@@ -25,6 +25,7 @@ pub struct EthereumService {
     thread_pool: CpuPool,
     break_points: Vec<u64>,
     delta_blocks: usize,
+    tokenholders_count_bucket_block_width: usize,
 }
 
 impl EthereumService {
@@ -45,6 +46,7 @@ impl EthereumService {
             break_points: env.config.ethereum.histogram_break_points.clone(),
             delta_blocks: env.config.ethereum.delta_time_secs
                 / env.config.ethereum.average_block_time_secs,
+            tokenholders_count_bucket_block_width: env.config.ethereum.tokenholders_count_bucket_block_width.clone(),
         }
     }
 
@@ -68,7 +70,7 @@ impl EthereumService {
             .map_err(|e| e.context(ErrorKind::TransactionsRepo).into())
             .and_then(move |delta_transactions| {
                 let accs = self_clone2.accounts.lock().unwrap();
-                accs.tokenholder_stats(&self_clone2.break_points, &delta_transactions)
+                accs.tokenholder_stats(&self_clone2.break_points, delta_transactions)
             })
     }
 
@@ -77,7 +79,7 @@ impl EthereumService {
         self.use_transactions_repo(move |repo| {
             let mut accounts = self_clone.accounts.lock().unwrap();
             let transactions = repo.list(Some(accounts.block + 1), None)?;
-            accounts.apply(&transactions, Operation::Apply);
+            accounts.apply(transactions, Operation::Apply);
             Ok(())
         })
     }

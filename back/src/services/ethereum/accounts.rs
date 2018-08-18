@@ -71,7 +71,7 @@ impl Accounts {
     pub fn tokenholder_stats(
         &self,
         break_points: &[u64],
-        last_transactions: &[Transaction],
+        last_transactions: Vec<Transaction>,
     ) -> Result<TokenHoldersStats, Error> {
         let mut base = self.clone();
         base.apply(last_transactions, Operation::Rollback);
@@ -147,13 +147,17 @@ impl Accounts {
         u64::max_value()
     }
 
-    pub fn apply(&mut self, txs: &[Transaction], opetation: Operation) {
+    pub fn apply(&mut self, mut txs: Vec<Transaction>, opetation: Operation) {
+        {
+            txs.sort_by_key(|tx| tx.block);
+        }
         let sign: f64 = match opetation {
             Operation::Apply => 1.0,
             Operation::Rollback => -1.0,
         };
         let power: BigDecimal = 10u64.pow(18).into();
         let power_ref = &power;
+        let mut prev_block_timestamp = 0;
         for tx in txs {
             let Transaction {
                 from_address,
@@ -162,18 +166,19 @@ impl Accounts {
                 block,
                 ..
             } = tx;
-            if *from_address != self.contract_address {
+            
+            if from_address != self.contract_address {
                 let balance = self.data.entry(from_address.clone()).or_insert(0.0f64);
-                let float_value: f64 = (value / power_ref.clone()).to_f64().expect(&format!("Error casting Bigdecimal {} to f64", value / power_ref.clone()));
+                let float_value: f64 = (value.clone() / power_ref.clone()).to_f64().expect(&format!("Error casting Bigdecimal {} to f64", value.clone() / power_ref.clone()));
                 *balance -= float_value * sign.clone();
             }
-            if *to_address != self.contract_address {
+            if to_address != self.contract_address {
                 let balance = self.data.entry(to_address.clone()).or_insert(0.0f64);
-                let float_value: f64 = (value / power_ref.clone()).to_f64().expect(&format!("Error casting Bigdecimal {} to f64", value / power_ref.clone()));
+                let float_value: f64 = (value.clone() / power_ref.clone()).to_f64().expect(&format!("Error casting Bigdecimal {} to f64", value.clone() / power_ref.clone()));
                 *balance += float_value * sign.clone();
             }
-            if *block > self.block {
-                self.block = *block;
+            if block > self.block {
+                self.block = block;
             }
         }
     }
