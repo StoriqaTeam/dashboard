@@ -18,6 +18,7 @@ fetcher_tick_seconds = 2
 blocks_per_fetch = 3000
 average_block_time_secs = 17
 histogram_break_points = [500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
+delta_time_secs = 86400
 api_key = ""
 
 [coinmarketcap]

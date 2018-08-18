@@ -1,8 +1,8 @@
 use super::error::*;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive};
+use failure::Fail;
 use models::*;
 use std::collections::HashMap;
-use failure::Fail;
 
 #[derive(Clone)]
 pub struct Accounts {
@@ -29,6 +29,28 @@ pub struct Bucket {
 pub struct TokenHoldersStats {
     buckets: Vec<Bucket>,
     tokenholders: u64,
+    tokenholders_delta: Option<f64>,
+}
+
+impl TokenHoldersStats {
+    fn update_deltas(&mut self, base: TokenHoldersStats) {
+        assert_eq!(
+            self.buckets.len(),
+            base.buckets.len(),
+            "Got two buckets of diffent size: {} - {}",
+            self.buckets.len(),
+            base.buckets.len()
+        );
+        for (i, bucket) in self.buckets.iter_mut().enumerate() {
+            let base_value = base.buckets[i].value;
+            if base_value > 0.0 {
+                bucket.delta = Some(bucket.value / base_value);
+            }
+        }
+        if base.tokenholders > 0 {
+            self.tokenholders_delta = Some((self.tokenholders as f64) / (base.tokenholders as f64));
+        }
+    }
 }
 
 impl Accounts {
@@ -44,7 +66,23 @@ impl Accounts {
         self.data.get(address).cloned()
     }
 
-    pub fn tokenholder_stats(&self, break_points: &[u64]) -> Result<TokenHoldersStats, Error> {
+    pub fn tokenholder_stats(
+        &self,
+        break_points: &[u64],
+        last_transactions: &[Transaction],
+    ) -> Result<TokenHoldersStats, Error> {
+        let mut base = self.clone();
+        base.apply(last_transactions, Operation::Rollback);
+        let mut stats = self.tokenholder_stats_no_deltas(break_points)?;
+        let base_stats = base.tokenholder_stats_no_deltas(break_points)?;
+        stats.update_deltas(base_stats);
+        Ok(stats)
+    }
+
+    fn tokenholder_stats_no_deltas(
+        &self,
+        break_points: &[u64],
+    ) -> Result<TokenHoldersStats, Error> {
         let mut break_points = break_points.to_vec();
         break_points.sort();
         let mut store: HashMap<u64, Bucket> = HashMap::new();
@@ -76,9 +114,10 @@ impl Accounts {
             let power: BigDecimal = 10u64.pow(18).into();
             let value: BigDecimal = value / power;
             let value = value.to_u64().ok_or(
-                format_err!("{:?}, Bigdecimal {} -> u64", key, value.clone()).context(ErrorKind::Arithmetics)
+                format_err!("{:?}, Bigdecimal {} -> u64", key, value.clone())
+                    .context(ErrorKind::Arithmetics),
             )?;
-            if value >=1 {
+            if value >= 1 {
                 let break_point = self.get_break_point(break_points.clone(), value);
                 let value_mut_ref = store.get_mut(&break_point).unwrap();
                 value_mut_ref.value += 1.0;
@@ -98,6 +137,7 @@ impl Accounts {
         Ok(TokenHoldersStats {
             buckets,
             tokenholders: total as u64,
+            tokenholders_delta: None,
         })
     }
 

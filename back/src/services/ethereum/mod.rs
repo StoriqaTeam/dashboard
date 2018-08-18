@@ -24,6 +24,7 @@ pub struct EthereumService {
     db_pool: DbPool,
     thread_pool: CpuPool,
     break_points: Vec<u64>,
+    delta_blocks: usize,
 }
 
 impl EthereumService {
@@ -35,11 +36,15 @@ impl EthereumService {
         } = env;
         EthereumService {
             accounts: Arc::new(Mutex::new(Accounts::new(TokenAddress::new(
-                env.config.ethereum.contract_address[2..].to_string().to_lowercase(),
+                env.config.ethereum.contract_address[2..]
+                    .to_string()
+                    .to_lowercase(),
             )))),
             db_pool,
             thread_pool,
             break_points: env.config.ethereum.histogram_break_points.clone(),
+            delta_blocks: env.config.ethereum.delta_time_secs
+                / env.config.ethereum.average_block_time_secs,
         }
     }
 
@@ -48,9 +53,18 @@ impl EthereumService {
         accounts.get(address).unwrap_or(0.into())
     }
 
-    pub fn tokenholder_stats(&self) -> Result<TokenHoldersStats, Error> {
-        let accs = self.accounts.lock().unwrap();
-        accs.tokenholder_stats(&self.break_points)
+    pub fn tokenholder_stats(&self) -> impl Future<Item = TokenHoldersStats, Error = Error> {
+        let self_clone = self.clone();
+        let self_clone2 = self.clone();
+        self.use_transactions_repo(move |repo| {
+            let max_block = repo.max_block()?.unwrap_or(0);
+            let base_block = max_block - (self_clone.delta_blocks as i64);
+            repo.list(Some(base_block), None)
+        }).map_err(|e| e.context(ErrorKind::TransactionsRepo).into())
+            .and_then(move |delta_transactions| {
+                let accs = self_clone2.accounts.lock().unwrap();
+                accs.tokenholder_stats(&self_clone2.break_points, &delta_transactions)
+            })
     }
 
     pub fn sync(&self) -> impl Future<Item = (), Error = Error> {
