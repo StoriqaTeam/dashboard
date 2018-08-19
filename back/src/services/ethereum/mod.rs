@@ -24,6 +24,8 @@ pub struct EthereumService {
     db_pool: DbPool,
     thread_pool: CpuPool,
     break_points: Vec<u64>,
+    delta_blocks: usize,
+    tokenholders_count_bucket_block_width: usize,
 }
 
 impl EthereumService {
@@ -34,23 +36,50 @@ impl EthereumService {
             ..
         } = env;
         EthereumService {
-            accounts: Arc::new(Mutex::new(Accounts::new(TokenAddress::new(
-                env.config.ethereum.contract_address[2..].to_string().to_lowercase(),
-            )))),
+            accounts: Arc::new(Mutex::new(Accounts::new(
+                TokenAddress::new(
+                    env.config.ethereum.contract_address[2..]
+                        .to_string()
+                        .to_lowercase(),
+                ),
+                env.config.ethereum.tokenholders_count_bucket_block_width,
+                env.config.ethereum.tokenholder_stq_threshold,
+            ))),
             db_pool,
             thread_pool,
             break_points: env.config.ethereum.histogram_break_points.clone(),
+            delta_blocks: env.config.ethereum.delta_time_secs
+                / env.config.ethereum.average_block_time_secs,
+            tokenholders_count_bucket_block_width: env
+                .config
+                .ethereum
+                .tokenholders_count_bucket_block_width
+                .clone(),
         }
     }
 
-    pub fn get_balance(&self, address: &TokenAddress) -> BigDecimal {
+    pub fn get_balance(&self, address: &TokenAddress) -> f64 {
         let accounts = self.accounts.lock().unwrap();
-        accounts.get(address).unwrap_or(0.into())
+        accounts.get(address).unwrap_or(0.0)
     }
 
-    pub fn tokenholder_stats(&self) -> Result<TokenHoldersStats, Error> {
-        let accs = self.accounts.lock().unwrap();
-        accs.tokenholder_stats(&self.break_points)
+    pub fn tokenholder_stats(&self) -> impl Future<Item = TokenHoldersStats, Error = Error> {
+        let self_clone = self.clone();
+        let self_clone2 = self.clone();
+        let self_clone3 = self.clone();
+        self.sync()
+            .and_then(move |_| {
+                self_clone3.use_transactions_repo(move |repo| {
+                    let max_block = repo.max_block()?.unwrap_or(0);
+                    let base_block = max_block - (self_clone.delta_blocks as i64);
+                    repo.list(Some(base_block), None)
+                })
+            })
+            .map_err(|e| e.context(ErrorKind::TransactionsRepo).into())
+            .and_then(move |delta_transactions| {
+                let accs = self_clone2.accounts.lock().unwrap();
+                accs.tokenholder_stats(&self_clone2.break_points, delta_transactions)
+            })
     }
 
     pub fn sync(&self) -> impl Future<Item = (), Error = Error> {
@@ -58,7 +87,7 @@ impl EthereumService {
         self.use_transactions_repo(move |repo| {
             let mut accounts = self_clone.accounts.lock().unwrap();
             let transactions = repo.list(Some(accounts.block + 1), None)?;
-            accounts.apply(&transactions, Operation::Apply);
+            accounts.apply(transactions, Operation::Apply);
             Ok(())
         })
     }

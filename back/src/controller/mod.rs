@@ -171,10 +171,8 @@ impl<
             }
 
             // GET /stq/balance
-            (&Method::GET, Some(Route::StqTokenholdersHistogram)) => {
-                serialize_future(future::result::<_, failure::Error>(
-                    self.ethereum_service.tokenholder_stats().map_err(|e| e.into()),
-                ))
+            (&Method::GET, Some(Route::StqTokenholdersStats)) => {
+                serialize_future(self.ethereum_service.tokenholder_stats())
             }
 
             // Fallback

@@ -1,14 +1,24 @@
 use super::error::*;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive};
+use failure::Fail;
 use models::*;
 use std::collections::HashMap;
-use failure::Fail;
+use std::f64::MAX as F64_MAX;
 
 #[derive(Clone)]
 pub struct Accounts {
     pub block: i64,
-    data: HashMap<TokenAddress, BigDecimal>,
+    pub tokenholders_history: Vec<TokenHoldersCountPoint>,
+    pub tokenholders_count_bucket_block_width: usize,
+    data: HashMap<TokenAddress, f64>,
     contract_address: TokenAddress,
+    tokenholder_stq_threshold: f64,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct TokenHoldersCountPoint {
+    pub block: i64,
+    pub count: usize,
 }
 
 #[derive(Clone, Copy)]
@@ -26,25 +36,72 @@ pub struct Bucket {
 }
 
 #[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct TokenHoldersStats {
     buckets: Vec<Bucket>,
     tokenholders: u64,
+    tokenholders_delta: Option<i64>,
+    tokenholders_history: Vec<TokenHoldersCountPoint>,
+}
+
+impl TokenHoldersStats {
+    fn update_deltas(&mut self, base: TokenHoldersStats) {
+        assert_eq!(
+            self.buckets.len(),
+            base.buckets.len(),
+            "Got two buckets of diffent size: {} - {}",
+            self.buckets.len(),
+            base.buckets.len()
+        );
+        for (i, bucket) in self.buckets.iter_mut().enumerate() {
+            let base_value = base.buckets[i].value;
+            if base_value > 0.0 {
+                bucket.delta = Some(bucket.value - base_value);
+            }
+        }
+        if base.tokenholders > 0 {
+            self.tokenholders_delta = Some(self.tokenholders as i64 - base.tokenholders as i64);
+        }
+    }
 }
 
 impl Accounts {
-    pub fn new(contract_address: TokenAddress) -> Self {
+    pub fn new(
+        contract_address: TokenAddress,
+        tokenholders_count_bucket_block_width: usize,
+        tokenholder_stq_threshold: f64,
+    ) -> Self {
         Accounts {
             block: 0,
             data: HashMap::new(),
             contract_address,
+            tokenholders_history: Vec::new(),
+            tokenholders_count_bucket_block_width,
+            tokenholder_stq_threshold,
         }
     }
 
-    pub fn get(&self, address: &TokenAddress) -> Option<BigDecimal> {
+    pub fn get(&self, address: &TokenAddress) -> Option<f64> {
         self.data.get(address).cloned()
     }
 
-    pub fn tokenholder_stats(&self, break_points: &[u64]) -> Result<TokenHoldersStats, Error> {
+    pub fn tokenholder_stats(
+        &self,
+        break_points: &[u64],
+        last_transactions: Vec<Transaction>,
+    ) -> Result<TokenHoldersStats, Error> {
+        let mut base = self.clone();
+        base.apply(last_transactions, Operation::Rollback);
+        let mut stats = self.tokenholder_stats_no_deltas(break_points)?;
+        let base_stats = base.tokenholder_stats_no_deltas(break_points)?;
+        stats.update_deltas(base_stats);
+        Ok(stats)
+    }
+
+    fn tokenholder_stats_no_deltas(
+        &self,
+        break_points: &[u64],
+    ) -> Result<TokenHoldersStats, Error> {
         let mut break_points = break_points.to_vec();
         break_points.sort();
         let mut store: HashMap<u64, Bucket> = HashMap::new();
@@ -72,13 +129,8 @@ impl Accounts {
             },
         );
         for key in self.data.keys() {
-            let value = self.data.get(&key).unwrap();
-            let power: BigDecimal = 10u64.pow(18).into();
-            let value: BigDecimal = value / power;
-            let value = value.to_u64().ok_or(
-                format_err!("{:?}, Bigdecimal {} -> u64", key, value.clone()).context(ErrorKind::Arithmetics)
-            )?;
-            if value >=1 {
+            let value = self.data.get(&key).cloned().unwrap();
+            if value >= self.tokenholder_stq_threshold {
                 let break_point = self.get_break_point(break_points.clone(), value);
                 let value_mut_ref = store.get_mut(&break_point).unwrap();
                 value_mut_ref.value += 1.0;
@@ -98,38 +150,96 @@ impl Accounts {
         Ok(TokenHoldersStats {
             buckets,
             tokenholders: total as u64,
+            tokenholders_delta: None,
+            tokenholders_history: self.tokenholders_history.clone(),
         })
     }
 
     // expected sorted non-empty break_points
-    fn get_break_point(&self, break_points: Vec<u64>, value: u64) -> u64 {
+    fn get_break_point(&self, break_points: Vec<u64>, value: f64) -> u64 {
         for break_point in break_points {
-            if value < break_point {
+            if value < break_point as f64 {
                 return break_point;
             }
         }
         u64::max_value()
     }
 
-    pub fn apply(&mut self, txs: &[Transaction], opetation: Operation) {
-        let sign: BigDecimal = match opetation {
-            Operation::Apply => 1.into(),
-            Operation::Rollback => BigDecimal::from(-1),
+    pub fn apply(&mut self, mut txs: Vec<Transaction>, opetation: Operation) {
+        txs.sort_by_key(|tx| tx.block);
+        let sign: f64 = match opetation {
+            Operation::Apply => 1.0,
+            Operation::Rollback => -1.0,
         };
+        let power: BigDecimal = 10u64.pow(18).into();
+        let power_ref = &power;
+        let mut prev_block_timestamp = self.block;
         for tx in txs {
             let Transaction {
                 from_address,
                 to_address,
                 value,
+                block,
                 ..
             } = tx;
-            if *from_address != self.contract_address {
-                let balance = self.data.entry(from_address.clone()).or_insert(0u8.into());
-                *balance -= value * sign.clone();
+            match opetation {
+                Operation::Apply => {
+                    // as soon as the tx of new block arrives - push prev block tokenholders count
+                    let current_block_timestamp =
+                        block / (self.tokenholders_count_bucket_block_width as i64);
+                    if current_block_timestamp > prev_block_timestamp {
+                        let tokenholder_stq_threshold = self.tokenholder_stq_threshold;
+                        let count = self
+                            .data
+                            .values()
+                            .filter(|x| **x >= tokenholder_stq_threshold)
+                            .count();
+                        self.tokenholders_history
+                            .push(TokenHoldersCountPoint { block, count });
+                        prev_block_timestamp = current_block_timestamp;
+                    }
+                }
+                _ => {}
             }
-            if *to_address != self.contract_address {
-                let balance = self.data.entry(to_address.clone()).or_insert(0u8.into());
-                *balance += value * sign.clone();
+
+            if from_address != self.contract_address {
+                let balance = self.data.entry(from_address.clone()).or_insert(0.0f64);
+                let float_value: f64 = (value.clone() / power_ref.clone()).to_f64().expect(
+                    &format!(
+                        "Error casting Bigdecimal {} to f64",
+                        value.clone() / power_ref.clone()
+                    ),
+                );
+                *balance -= float_value * sign.clone();
+            }
+            if to_address != self.contract_address {
+                let balance = self.data.entry(to_address.clone()).or_insert(0.0f64);
+                let float_value: f64 = (value.clone() / power_ref.clone()).to_f64().expect(
+                    &format!(
+                        "Error casting Bigdecimal {} to f64",
+                        value.clone() / power_ref.clone()
+                    ),
+                );
+                *balance += float_value * sign.clone();
+            }
+            if block > self.block {
+                self.block = block;
+            }
+        }
+
+        // Push the last block
+        if let Some(point) = self.tokenholders_history.iter().last().cloned() {
+            if point.block != self.block {
+                let tokenholder_stq_threshold = self.tokenholder_stq_threshold;
+                let count = self
+                    .data
+                    .values()
+                    .filter(|x| **x >= tokenholder_stq_threshold)
+                    .count();
+                self.tokenholders_history.push(TokenHoldersCountPoint {
+                    block: self.block,
+                    count,
+                });
             }
         }
     }
