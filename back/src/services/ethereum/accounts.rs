@@ -8,8 +8,16 @@ use std::f64::MAX as F64_MAX;
 #[derive(Clone)]
 pub struct Accounts {
     pub block: i64,
+    pub tokenholders_history: Vec<TokenHoldersCountPoint>,
+    pub tokenholders_count_bucket_block_width: usize,
     data: HashMap<TokenAddress, f64>,
     contract_address: TokenAddress,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct TokenHoldersCountPoint {
+    pub block: i64,
+    pub count: usize,
 }
 
 #[derive(Clone, Copy)]
@@ -32,6 +40,7 @@ pub struct TokenHoldersStats {
     buckets: Vec<Bucket>,
     tokenholders: u64,
     tokenholders_delta: Option<i64>,
+    tokenholders_history: Vec<TokenHoldersCountPoint>,
 }
 
 impl TokenHoldersStats {
@@ -56,11 +65,13 @@ impl TokenHoldersStats {
 }
 
 impl Accounts {
-    pub fn new(contract_address: TokenAddress) -> Self {
+    pub fn new(contract_address: TokenAddress, tokenholders_count_bucket_block_width: usize) -> Self {
         Accounts {
             block: 0,
             data: HashMap::new(),
             contract_address,
+            tokenholders_history: Vec::new(),
+            tokenholders_count_bucket_block_width,
         }
     }
 
@@ -134,6 +145,7 @@ impl Accounts {
             buckets,
             tokenholders: total as u64,
             tokenholders_delta: None,
+            tokenholders_history: self.tokenholders_history.clone(),
         })
     }
 
@@ -148,16 +160,14 @@ impl Accounts {
     }
 
     pub fn apply(&mut self, mut txs: Vec<Transaction>, opetation: Operation) {
-        {
-            txs.sort_by_key(|tx| tx.block);
-        }
+        txs.sort_by_key(|tx| tx.block);
         let sign: f64 = match opetation {
             Operation::Apply => 1.0,
             Operation::Rollback => -1.0,
         };
         let power: BigDecimal = 10u64.pow(18).into();
         let power_ref = &power;
-        let mut prev_block_timestamp = 0;
+        let mut prev_block_timestamp = self.block;
         for tx in txs {
             let Transaction {
                 from_address,
@@ -166,7 +176,19 @@ impl Accounts {
                 block,
                 ..
             } = tx;
-            
+            match opetation {
+                Operation::Apply => {
+                    // as soon as the tx of new block arrives - push prev block tokenholders count
+                    let current_block_timestamp = block / (self.tokenholders_count_bucket_block_width as i64);
+                    if current_block_timestamp > prev_block_timestamp {
+                        let count = self.data.values().filter(|x| **x >= 1.0).count();
+                        self.tokenholders_history.push(TokenHoldersCountPoint { block, count });
+                        prev_block_timestamp = current_block_timestamp;
+                    }
+                },
+                _ => {}
+            }
+
             if from_address != self.contract_address {
                 let balance = self.data.entry(from_address.clone()).or_insert(0.0f64);
                 let float_value: f64 = (value.clone() / power_ref.clone()).to_f64().expect(&format!("Error casting Bigdecimal {} to f64", value.clone() / power_ref.clone()));
@@ -179,6 +201,14 @@ impl Accounts {
             }
             if block > self.block {
                 self.block = block;
+            }
+        }
+
+        // Push the last block
+        if let Some(point) = self.tokenholders_history.iter().last().cloned() {
+            if point.block != self.block {
+                let count = self.data.values().filter(|x| **x >= 1.0).count();
+                self.tokenholders_history.push(TokenHoldersCountPoint { block: self.block, count });
             }
         }
     }
