@@ -33,6 +33,7 @@ pub struct Ethereum {
     pub histogram_break_points: Vec<u64>,
     pub delta_time_secs: usize,
     pub tokenholders_count_bucket_block_width: usize,
+    pub tokenholder_stq_threshold: f64,
 }
 
 #[derive(Debug, Deserialize, Clone)]

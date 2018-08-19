@@ -40,7 +40,7 @@ impl EthereumService {
                 env.config.ethereum.contract_address[2..]
                     .to_string()
                     .to_lowercase(),
-            ), env.config.ethereum.tokenholders_count_bucket_block_width))),
+            ), env.config.ethereum.tokenholders_count_bucket_block_width, env.config.ethereum.tokenholder_stq_threshold))),
             db_pool,
             thread_pool,
             break_points: env.config.ethereum.histogram_break_points.clone(),

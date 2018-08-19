@@ -12,6 +12,7 @@ pub struct Accounts {
     pub tokenholders_count_bucket_block_width: usize,
     data: HashMap<TokenAddress, f64>,
     contract_address: TokenAddress,
+    tokenholder_stq_threshold: f64,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -65,13 +66,14 @@ impl TokenHoldersStats {
 }
 
 impl Accounts {
-    pub fn new(contract_address: TokenAddress, tokenholders_count_bucket_block_width: usize) -> Self {
+    pub fn new(contract_address: TokenAddress, tokenholders_count_bucket_block_width: usize, tokenholder_stq_threshold: f64) -> Self {
         Accounts {
             block: 0,
             data: HashMap::new(),
             contract_address,
             tokenholders_history: Vec::new(),
             tokenholders_count_bucket_block_width,
+            tokenholder_stq_threshold,
         }
     }
 
@@ -124,7 +126,7 @@ impl Accounts {
         );
         for key in self.data.keys() {
             let value = self.data.get(&key).cloned().unwrap();
-            if value >= 1.0 {
+            if value >= self.tokenholder_stq_threshold {
                 let break_point = self.get_break_point(break_points.clone(), value);
                 let value_mut_ref = store.get_mut(&break_point).unwrap();
                 value_mut_ref.value += 1.0;
@@ -181,7 +183,8 @@ impl Accounts {
                     // as soon as the tx of new block arrives - push prev block tokenholders count
                     let current_block_timestamp = block / (self.tokenholders_count_bucket_block_width as i64);
                     if current_block_timestamp > prev_block_timestamp {
-                        let count = self.data.values().filter(|x| **x >= 1.0).count();
+                        let tokenholder_stq_threshold = self.tokenholder_stq_threshold;
+                        let count = self.data.values().filter(|x| **x >= tokenholder_stq_threshold).count();
                         self.tokenholders_history.push(TokenHoldersCountPoint { block, count });
                         prev_block_timestamp = current_block_timestamp;
                     }
@@ -207,7 +210,8 @@ impl Accounts {
         // Push the last block
         if let Some(point) = self.tokenholders_history.iter().last().cloned() {
             if point.block != self.block {
-                let count = self.data.values().filter(|x| **x >= 1.0).count();
+                let tokenholder_stq_threshold = self.tokenholder_stq_threshold;
+                let count = self.data.values().filter(|x| **x >= tokenholder_stq_threshold).count();
                 self.tokenholders_history.push(TokenHoldersCountPoint { block: self.block, count });
             }
         }

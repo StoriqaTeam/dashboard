@@ -20,6 +20,7 @@ average_block_time_secs = 17
 histogram_break_points = [500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
 delta_time_secs = 86400
 tokenholders_count_bucket_block_width = 5000
+tokenholder_stq_threshold = 1.0
 api_key = ""
 
 [coinmarketcap]
