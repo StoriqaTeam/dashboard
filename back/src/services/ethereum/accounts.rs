@@ -66,7 +66,11 @@ impl TokenHoldersStats {
 }
 
 impl Accounts {
-    pub fn new(contract_address: TokenAddress, tokenholders_count_bucket_block_width: usize, tokenholder_stq_threshold: f64) -> Self {
+    pub fn new(
+        contract_address: TokenAddress,
+        tokenholders_count_bucket_block_width: usize,
+        tokenholder_stq_threshold: f64,
+    ) -> Self {
         Accounts {
             block: 0,
             data: HashMap::new(),
@@ -181,25 +185,41 @@ impl Accounts {
             match opetation {
                 Operation::Apply => {
                     // as soon as the tx of new block arrives - push prev block tokenholders count
-                    let current_block_timestamp = block / (self.tokenholders_count_bucket_block_width as i64);
+                    let current_block_timestamp =
+                        block / (self.tokenholders_count_bucket_block_width as i64);
                     if current_block_timestamp > prev_block_timestamp {
                         let tokenholder_stq_threshold = self.tokenholder_stq_threshold;
-                        let count = self.data.values().filter(|x| **x >= tokenholder_stq_threshold).count();
-                        self.tokenholders_history.push(TokenHoldersCountPoint { block, count });
+                        let count = self
+                            .data
+                            .values()
+                            .filter(|x| **x >= tokenholder_stq_threshold)
+                            .count();
+                        self.tokenholders_history
+                            .push(TokenHoldersCountPoint { block, count });
                         prev_block_timestamp = current_block_timestamp;
                     }
-                },
+                }
                 _ => {}
             }
 
             if from_address != self.contract_address {
                 let balance = self.data.entry(from_address.clone()).or_insert(0.0f64);
-                let float_value: f64 = (value.clone() / power_ref.clone()).to_f64().expect(&format!("Error casting Bigdecimal {} to f64", value.clone() / power_ref.clone()));
+                let float_value: f64 = (value.clone() / power_ref.clone()).to_f64().expect(
+                    &format!(
+                        "Error casting Bigdecimal {} to f64",
+                        value.clone() / power_ref.clone()
+                    ),
+                );
                 *balance -= float_value * sign.clone();
             }
             if to_address != self.contract_address {
                 let balance = self.data.entry(to_address.clone()).or_insert(0.0f64);
-                let float_value: f64 = (value.clone() / power_ref.clone()).to_f64().expect(&format!("Error casting Bigdecimal {} to f64", value.clone() / power_ref.clone()));
+                let float_value: f64 = (value.clone() / power_ref.clone()).to_f64().expect(
+                    &format!(
+                        "Error casting Bigdecimal {} to f64",
+                        value.clone() / power_ref.clone()
+                    ),
+                );
                 *balance += float_value * sign.clone();
             }
             if block > self.block {
@@ -211,8 +231,15 @@ impl Accounts {
         if let Some(point) = self.tokenholders_history.iter().last().cloned() {
             if point.block != self.block {
                 let tokenholder_stq_threshold = self.tokenholder_stq_threshold;
-                let count = self.data.values().filter(|x| **x >= tokenholder_stq_threshold).count();
-                self.tokenholders_history.push(TokenHoldersCountPoint { block: self.block, count });
+                let count = self
+                    .data
+                    .values()
+                    .filter(|x| **x >= tokenholder_stq_threshold)
+                    .count();
+                self.tokenholders_history.push(TokenHoldersCountPoint {
+                    block: self.block,
+                    count,
+                });
             }
         }
     }

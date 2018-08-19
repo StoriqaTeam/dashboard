@@ -36,17 +36,25 @@ impl EthereumService {
             ..
         } = env;
         EthereumService {
-            accounts: Arc::new(Mutex::new(Accounts::new(TokenAddress::new(
-                env.config.ethereum.contract_address[2..]
-                    .to_string()
-                    .to_lowercase(),
-            ), env.config.ethereum.tokenholders_count_bucket_block_width, env.config.ethereum.tokenholder_stq_threshold))),
+            accounts: Arc::new(Mutex::new(Accounts::new(
+                TokenAddress::new(
+                    env.config.ethereum.contract_address[2..]
+                        .to_string()
+                        .to_lowercase(),
+                ),
+                env.config.ethereum.tokenholders_count_bucket_block_width,
+                env.config.ethereum.tokenholder_stq_threshold,
+            ))),
             db_pool,
             thread_pool,
             break_points: env.config.ethereum.histogram_break_points.clone(),
             delta_blocks: env.config.ethereum.delta_time_secs
                 / env.config.ethereum.average_block_time_secs,
-            tokenholders_count_bucket_block_width: env.config.ethereum.tokenholders_count_bucket_block_width.clone(),
+            tokenholders_count_bucket_block_width: env
+                .config
+                .ethereum
+                .tokenholders_count_bucket_block_width
+                .clone(),
         }
     }
 
