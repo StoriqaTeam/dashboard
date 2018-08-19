@@ -171,7 +171,7 @@ impl<
             }
 
             // GET /stq/balance
-            (&Method::GET, Some(Route::StqTokenholdersHistogram)) => {
+            (&Method::GET, Some(Route::StqTokenholdersStats)) => {
                 serialize_future(self.ethereum_service.tokenholder_stats())
             }
 
