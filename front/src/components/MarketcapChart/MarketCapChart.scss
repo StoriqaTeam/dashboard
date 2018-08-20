@@ -18,7 +18,6 @@
   }
 
   .legend {
-    opacity: 0.72;
     border-radius: 0.32vw;
     background-color: #1d2532;
     position: absolute;
@@ -27,6 +26,7 @@
     flex-direction: column;
     justify-content: space-between;
     padding: 1.3vw;
+    z-index: 9999;
 
     .legendRow {
       display: flex;
