@@ -1,3 +1,4 @@
+use bigdecimal::BigDecimal;
 use std::env;
 
 use config_crate::{Config as RawConfig, ConfigError, Environment, File};
@@ -27,7 +28,12 @@ pub struct Ethereum {
     pub transfer_topic: String,
     pub api_key: String,
     pub fetcher_tick_seconds: usize,
+    pub average_block_time_secs: usize,
     pub blocks_per_fetch: i64,
+    pub histogram_break_points: Vec<u64>,
+    pub delta_time_secs: usize,
+    pub tokenholders_count_bucket_block_width: usize,
+    pub tokenholder_stq_threshold: f64,
 }
 
 #[derive(Debug, Deserialize, Clone)]

@@ -44,9 +44,11 @@ mod services;
 mod types;
 
 use self::config::Config;
-use self::environment::Environment;
+use self::environment::FetcherEnvironment;
+use self::environment::ServerEnvironment;
 use self::fetchers::CoinmarketcapFetcher;
 use self::fetchers::EthereumFetcher;
+use self::services::EthereumService;
 use diesel::pg::PgConnection;
 use failure::Fail;
 use futures::{Future, Stream};
@@ -82,9 +84,26 @@ pub fn start_server(config: Config) {
     // Prepare CPU pool
     let cpu_pool = CpuPool::new(thread_count);
 
+    // Prepare ethereum service
+    let env = ServerEnvironment::new(config.clone());
+    let ethereum_service = EthereumService::new(env);
+    info!("Start syncing ethereum service");
+    match ethereum_service.sync().wait() {
+        Err(e) => {
+            log_error(&e);
+            panic!("Unable to sync ethereum service");
+        }
+        _ => (),
+    };
+    info!("Finished syncing ethereum service");
+
     let new_service = move || {
-        let controller =
-            controller::ControllerImpl::new(db_pool.clone(), cpu_pool.clone(), config.clone());
+        let controller = controller::ControllerImpl::new(
+            db_pool.clone(),
+            cpu_pool.clone(),
+            config.clone(),
+            ethereum_service.clone(),
+        );
 
         // Prepare application
         let app = Application::<Error>::new(controller);
@@ -100,20 +119,21 @@ pub fn start_server(config: Config) {
 }
 
 pub fn print_current_block_number(config: Config) {
-    let env = Environment::new(config);
+    let env = FetcherEnvironment::new(config);
     let future = env
         .ethereum_client
         .fetch_current_block_number()
         .map(|number| {
             println!("Current block number is {}, or {:x}", number, number);
-        }).map_err(|e| {
+        })
+        .map_err(|e| {
             log_error(&e);
         });
     tokio::run(future);
 }
 
 pub fn print_transactions(config: Config, from: Option<i64>, to: Option<i64>) {
-    let env = Environment::new(config);
+    let env = FetcherEnvironment::new(config);
     let future = env
         .ethereum_client
         .fetch_transactions(from, to)
@@ -122,7 +142,8 @@ pub fn print_transactions(config: Config, from: Option<i64>, to: Option<i64>) {
                 "Transactions from {:?}, to {:?} are: {:?}",
                 from, to, transactions
             );
-        }).map_err(|e| {
+        })
+        .map_err(|e| {
             log_error(&e);
         });
     tokio::run(future);
@@ -137,28 +158,30 @@ pub fn start_fetcher(config: Config) {
 }
 
 fn create_ethereum_fetcher(config: Config) -> impl Future<Item = (), Error = ()> {
-    let environment = Environment::new(config);
+    let environment = FetcherEnvironment::new(config);
     let fetcher = EthereumFetcher::new(environment);
     let stream = fetcher.start();
     stream
         .or_else(|e| {
             log_error(&e);
             futures::future::ok(())
-        }).for_each(|_| futures::future::ok(()))
+        })
+        .for_each(|_| futures::future::ok(()))
 }
 
 fn create_coinmarketcap_fetcher(config: Config) -> impl Future<Item = (), Error = ()> {
-    let environment = Environment::new(config);
+    let environment = FetcherEnvironment::new(config);
     let fetcher = CoinmarketcapFetcher::new(environment);
     let stream = fetcher.start();
     stream
         .or_else(|e| {
             log_error(&e);
             futures::future::ok(())
-        }).for_each(|_| futures::future::ok(()))
+        })
+        .for_each(|_| futures::future::ok(()))
 }
 
-fn log_error(e: &Fail) {
+pub fn log_error(e: &Fail) {
     let mut err = e;
     loop {
         error!("{}", err);

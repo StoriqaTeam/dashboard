@@ -11,11 +11,27 @@ thread_count = 20
 thread_count = 20
 
 [ethereum]
+# Start syncing from this block (prev block doesn't contain stq transactions)
 storiqa_genesis_block = 4334119
+# Storiqa contract address
 contract_address = "0x5c3a228510D246b78a3765C20221Cbf3082b44a4"
+# Log topic for transferring stq ERC-20 token. All token movements are covered by it.
 transfer_topic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+# Interval for getting fresh data from blockchain
 fetcher_tick_seconds = 2
-blocks_per_fetch = 1000
+# How many blocks to fetch per one request from blockchain
+blocks_per_fetch = 3000
+# This is Ethereum invariant, needed to convert block-time to calendar time
+average_block_time_secs = 17
+# Breakpoints in stq for tokenholders count histogram
+histogram_break_points = [500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
+# Deltas on tokenholders stats are calculated based on some time ago. Here we specify this time
+delta_time_secs = 86400
+# Controls frequency of sampling for tokenholders time series
+tokenholders_count_bucket_block_width = 5000
+# You need to have at least this amount on your balance to count as tokenholder
+tokenholder_stq_threshold = 1.0
+# Infura api key
 api_key = ""
 
 [coinmarketcap]

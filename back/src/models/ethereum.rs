@@ -2,7 +2,7 @@ use bigdecimal::BigDecimal;
 use schema::transactions;
 use std::time::SystemTime;
 
-#[derive(Debug, Serialize, Deserialize, Clone, DieselTypes)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, DieselTypes)]
 pub struct TokenAddress(String);
 
 impl TokenAddress {

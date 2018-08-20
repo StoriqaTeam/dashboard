@@ -4,7 +4,7 @@ use self::error::*;
 use clients::EthereumClient;
 use clients::EthereumClientError;
 use diesel::pg::PgConnection;
-use environment::Environment;
+use environment::FetcherEnvironment;
 use failure::Fail;
 use futures::future;
 use futures::future::Either;
@@ -31,7 +31,7 @@ pub struct EthereumFetcher {
 }
 
 impl EthereumFetcher {
-    pub fn new(env: Environment) -> Self {
+    pub fn new(env: FetcherEnvironment) -> Self {
         let duration = Duration::from_secs(env.config.ethereum.fetcher_tick_seconds as u64);
         let thread_pool = CpuPool::new(env.config.fetcher.thread_count as usize);
         EthereumFetcher {
@@ -87,7 +87,8 @@ impl EthereumFetcher {
                         .fetch_current_block_number()
                         .map(move |to| (from, to))
                 })
-            }).and_then(move |(from_min, to_max)| {
+            })
+            .and_then(move |(from_min, to_max)| {
                 let mut jobs: Vec<(i64, i64)> = Vec::new();
                 let mut from = from_min;
                 while from <= to_max {
@@ -104,15 +105,24 @@ impl EthereumFetcher {
                         self2.use_ethereum_client(move |client| {
                             client.fetch_transactions(Some(from), Some(to))
                         })
-                    }).and_then(move |transactions| {
+                    })
+                    .and_then(move |transactions| {
                         debug!(
                             "Ethereum client: Received `{}` transactions",
                             transactions.len()
                         );
-                        self3.use_transactions_repo(move |repo| repo.insert(transactions))
+                        self3.use_transactions_repo(move |repo| {
+                            let txs = repo.insert(transactions)?;
+                            debug!(
+                                "Ethereum client: Written `{}` transactions",
+                                txs.iter().len()
+                            );
+                            Ok(txs)
+                        })
                     });
                 stream.for_each(|_| Ok(()))
-            }).then(move |res| {
+            })
+            .then(move |res| {
                 let mut busy = self4
                     .busy
                     .lock()

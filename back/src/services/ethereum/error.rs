@@ -10,10 +10,14 @@ pub struct Error {
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
-    #[fail(display = "Ethereum client: deserizalization error")]
-    Deserialization,
-    #[fail(display = "Ethereum client: error fetching HTTP data")]
-    Http,
+    #[fail(display = "Repo: Diesel error")]
+    Diesel,
+    #[fail(display = "Ethereum service: Failed to obtain db connection")]
+    DatabaseConnection,
+    #[fail(display = "Ethereum service: Transactions repo error")]
+    TransactionsRepo,
+    #[fail(display = "Ethereum service: Error working with number")]
+    Arithmetics,
 }
 
 impl Fail for Error {

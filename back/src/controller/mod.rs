@@ -11,6 +11,7 @@ use chrono::prelude::*;
 use diesel::connection::AnsiTransactionManager;
 use diesel::pg::Pg;
 use diesel::Connection;
+use environment::ServerEnvironment;
 use failure;
 use futures::future;
 use futures::Future;
@@ -19,6 +20,8 @@ use futures_cpupool::CpuPool;
 use hyper::Body;
 use hyper::Method;
 use hyper::Request;
+use log_error;
+use models::*;
 use r2d2::{ManageConnection, Pool};
 use serde::ser::Serialize;
 use serde_json;
@@ -29,6 +32,7 @@ use self::routes::Route;
 use config::Config;
 use errors::ErrorKind;
 use services::coinmarketcap::{CoinMarketCapsService, CoinMarketCapsServiceImpl};
+use services::EthereumService;
 
 pub type ControllerFuture = Box<Future<Item = Body, Error = failure::Error> + Send>;
 
@@ -48,6 +52,7 @@ where
     pub cpu_pool: CpuPool,
     pub route_parser: Arc<RouteParser<Route>>,
     pub config: Config,
+    pub ethereum_service: EthereumService,
 }
 
 unsafe impl<T, M> Send for ControllerImpl<T, M>
@@ -62,13 +67,19 @@ impl<
     > ControllerImpl<T, M>
 {
     /// Create a new controller based on services
-    pub fn new(db_pool: Pool<M>, cpu_pool: CpuPool, config: Config) -> Self {
+    pub fn new(
+        db_pool: Pool<M>,
+        cpu_pool: CpuPool,
+        config: Config,
+        ethereum_service: EthereumService,
+    ) -> Self {
         let route_parser = Arc::new(routes::create_route_parser());
         Self {
             route_parser,
             db_pool,
             cpu_pool,
             config,
+            ethereum_service,
         }
     }
 }
@@ -122,7 +133,7 @@ impl<
                         format_err!(
                             "Parsing query parameters // GET /coinmarketcap/history failed!"
                         ).context(ErrorKind::Parse)
-                        .into(),
+                            .into(),
                     ))
                 }
             }
@@ -139,6 +150,31 @@ impl<
                 serialize_future(coinmarketcap_service.all())
             }
 
+            // GET /stq/balance
+            (&Method::GET, Some(Route::StqBalance)) => {
+                debug!("Received request to get stq balance");
+                if let Some(address) =
+                    parse_query!(uri.query().unwrap_or_default(), "address" => String)
+                {
+                    let token_address = TokenAddress::new(address.to_lowercase());
+                    serialize_future(future::ok::<_, failure::Error>(
+                        self.ethereum_service.get_balance(&token_address),
+                    ))
+                } else {
+                    Box::new(future::err(
+                        format_err!(
+                            "Parsing query parameter `address` // GET /stq/balance failed!"
+                        ).context(ErrorKind::Parse)
+                            .into(),
+                    ))
+                }
+            }
+
+            // GET /stq/balance
+            (&Method::GET, Some(Route::StqTokenholdersStats)) => {
+                serialize_future(self.ethereum_service.tokenholder_stats())
+            }
+
             // Fallback
             (m, _) => Box::new(future::err(
                 format_err!(
@@ -146,7 +182,7 @@ impl<
                     m,
                     path
                 ).context(ErrorKind::NotFound)
-                .into(),
+                    .into(),
             )),
         }
     }

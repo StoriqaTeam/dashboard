@@ -18,6 +18,8 @@ use types::Client;
 pub use self::error::*;
 use self::responses::*;
 
+static ADDRESS_LENGTH: usize = 40;
+
 #[derive(Clone)]
 pub struct EthereumClient {
     client: Arc<Client>,
@@ -96,43 +98,45 @@ impl EthereumClient {
                                     &log.block_number[2..],
                                     &log
                                 )).context(ErrorKind::Deserialization)
-                                .into()
+                                    .into()
                             });
                         // Bigdecimal cannot convert hex strings, only decimals
-                        let value_res: Result<BigDecimal, Error> =
-                            u128::from_str_radix(&log.data[2..], 16)
-                                .map_err(|e| {
-                                    e.context(format_err!(
-                                        "value: `{}`, log: {:?}",
-                                        &log.data[2..],
-                                        &log
-                                    )).context(ErrorKind::Deserialization)
-                                    .into()
-                                }).and_then(|number| {
-                                    // it's derirable to convert number to bigdecimal rightaway, but
-                                    // there's some strange bug using from "u128"
-                                    let decimal = format!("{}", number);
-                                    BigDecimal::from_str(&decimal).map_err(|e| {
-                                        e.context(format_err!("decimal: `{}`", number))
-                                            .context(ErrorKind::Deserialization)
-                                            .into()
-                                    })
-                                });
+                        let value_res: Result<BigDecimal, Error> = u128::from_str_radix(
+                            &log.data[2..],
+                            16,
+                        ).map_err(|e| {
+                            e.context(format_err!("value: `{}`, log: {:?}", &log.data[2..], &log))
+                                .context(ErrorKind::Deserialization)
+                                .into()
+                        })
+                            .and_then(|number| {
+                                // it's derirable to convert number to bigdecimal rightaway, but
+                                // there's some strange bug using from "u128"
+                                let decimal = format!("{}", number);
+                                BigDecimal::from_str(&decimal).map_err(|e| {
+                                    e.context(format_err!("decimal: `{}`", number))
+                                        .context(ErrorKind::Deserialization)
+                                        .into()
+                                })
+                            });
                         let from = from_res?;
                         let to = to_res?;
                         let block = block_res?;
                         let value = value_res?;
                         Ok(NewTransaction {
                             from_address: TokenAddress::new(
-                                from[max(from.len() - 20, 0)..].to_string(),
+                                from[max(from.len() - ADDRESS_LENGTH, 0)..].to_string(),
                             ),
-                            to_address: TokenAddress::new(to[max(to.len() - 20, 0)..].to_string()),
+                            to_address: TokenAddress::new(
+                                to[max(to.len() - ADDRESS_LENGTH, 0)..].to_string(),
+                            ),
                             block,
                             value,
                             block_hash: log.block_hash[2..].to_string(),
                             transaction_hash: log.transaction_hash[2..].to_string(),
                         })
-                    }).collect();
+                    })
+                    .collect();
                 res
             })
     }
