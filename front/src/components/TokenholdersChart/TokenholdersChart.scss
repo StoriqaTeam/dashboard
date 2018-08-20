@@ -1,5 +1,8 @@
 .TokenholdersChart {
   width: 44%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 
   .titleWrapper {
     display: flex;
@@ -12,5 +15,90 @@
 
   .tokenholdersChartWrapper {
     margin-top: 1vw;
+    display: flex;
+    position: relative;
+    flex: 1;
+    align-items: flex-end;
+    justify-content: space-between;
+
+    .grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 1.36vw;
+      z-index: 999;
+      display: flex;
+      flex-direction: column-reverse;
+      justify-content: space-between;
+
+      .gridItem {
+        font-size: 0.96vw;
+        opacity: 0.48;
+      }
+
+      .first {
+        border-bottom: solid 1px rgba(102, 128, 164, 0.25);
+      }
+      .notFirst {
+        border-top: solid 1px rgba(102, 128, 164, 0.25);
+      }
+    }
+
+    .bars {
+      display: flex;
+      flex: 1;
+      position: absolute;
+      top: 0;
+      left: 3vw;
+      right: 0;
+      bottom: 0;
+
+      .baritem {
+        z-index: 1000;
+        display: flex;
+        flex: 1;
+        height: 100%;
+        align-items: center;
+        justify-content: flex-end;
+        flex-direction: column;
+
+        .barItemValue {
+          opacity: 0.51;
+          border-radius: 0.24vw;
+          padding: 0.5vw;
+          margin-bottom: 0.5vw;
+          background-color: #070a0e;
+        }
+
+        .barItemDelta {
+          font-size: 0.7vw;
+          margin-bottom: 0.5vw;
+
+          .negative {
+            color: #ee5922;
+          }
+
+          .positive {
+            color: #00ffb8;
+          }
+        }
+
+        .bar {
+          width: 100%;
+        }
+
+        .fromTo {
+          font-size: 0.8vw;
+          margin-top: 0.56vw;
+          white-space: nowrap;
+          line-height: 1;
+        }
+      }
+
+      .baritem + .baritem {
+        margin-left: 1vw;
+      }
+    }
   }
 }

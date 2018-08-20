@@ -8,7 +8,8 @@ const apiClient = {
   fetchMarketCap: () =>
     axios.get(`${dashboardApiEndpoint}/coinmarketcap/history/all`),
   fetchTokenInfo: () => axios.get(`${dashboardApiEndpoint}/coinmarketcap/last`),
-  fetchTokenholders: () => () => ({ response: {} })
+  fetchTokenholders: () =>
+    axios.get(`${dashboardApiEndpoint}/stq/tokenholders_stats`)
 };
 
 export default apiClient;
