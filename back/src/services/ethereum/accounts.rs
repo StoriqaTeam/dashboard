@@ -173,7 +173,8 @@ impl Accounts {
         };
         let power: BigDecimal = 10u64.pow(18).into();
         let power_ref = &power;
-        let mut prev_block_timestamp = self.block;
+        let mut prev_block_timestamp =
+            self.block / (self.tokenholders_count_bucket_block_width as i64);
         for tx in txs {
             let Transaction {
                 from_address,
