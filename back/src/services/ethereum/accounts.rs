@@ -141,10 +141,6 @@ impl Accounts {
         for key in keys.iter() {
             total += store[key].value;
         }
-        for key in keys.iter() {
-            let value_mut_ref = store.get_mut(key).unwrap();
-            value_mut_ref.value /= total;
-        }
         let mut buckets: Vec<Bucket> = store.values().cloned().collect();
         buckets.sort_by_key(|bucket| bucket.to);
         Ok(TokenHoldersStats {
