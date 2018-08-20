@@ -1,6 +1,14 @@
 .TokenInfo {
   width: 25%;
 
+  .delta {
+    transition: all 1s ease;
+  }
+
+  .delta:hover {
+    font-size: 200%;
+  }
+
   div:first-of-type {
     margin-top: 1vw;
   }
