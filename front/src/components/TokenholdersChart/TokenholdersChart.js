@@ -84,32 +84,28 @@ class TokenholdersChart extends Component<PropsType, StateType> {
     apiClient
       .fetchTokenholders()
       .then(response => {
-        console.log({ response });
-        this.setState({
-          tokenholdersData: {
-            holdersArray: pathOr([], ["data", "buckets"], response),
-            holdersInfo: {
-              value: pathOr(0, ["data", "tokenholders"], response),
-              delta: pathOr(null, ["data", "tokenholdersDelta"], response)
+        this.setState(
+          {
+            tokenholdersData: {
+              holdersArray: pathOr([], ["data", "buckets"], response),
+              holdersInfo: {
+                value: pathOr(0, ["data", "tokenholders"], response),
+                delta: pathOr(null, ["data", "tokenholdersDelta"], response)
+              }
             }
+          },
+          () => {
+            setTimeout(() => {
+              this.fetchChartData();
+            }, 10000);
           }
-        });
-        // this.initChart({
-        //   holdersArray: pathOr([], ["data", "buckets"], response),
-        //   holdersInfo: {
-        //     value: pathOr(0, ["data", "tokenholders"], response),
-        //     delta: pathOr(null, ["data", "tokenholdersDelta"], response)
-        //   }
-        // });
-        // setTimeout(() => {
-        //   this.fetchChartData();
-        // }, 5000);
+        );
       })
       .catch(err => {
         console.log({ err });
-        // setTimeout(() => {
-        //   this.fetchChartData();
-        // }, 5000);
+        setTimeout(() => {
+          this.fetchChartData();
+        }, 10000);
       });
   };
 
@@ -139,105 +135,6 @@ class TokenholdersChart extends Component<PropsType, StateType> {
     }
   };
 
-  /* transformResponseForChart = (responseData: {}): {
-    labels: Array<string>,
-    data: Array<number>
-  } => {
-    return reduce(
-      (acc, item) =>
-        pipe(
-          over(lensProp("labels"), append(this.getLabelForItem(item))),
-          over(lensProp("data"), append(item.value))
-        )(acc),
-      {
-        labels: [],
-        data: []
-      },
-      pathOr([], ["data", "buckets"], responseData)
-    );
-  }; */
-
-  initChart = (data: {
-    holdersArray: Array<{
-      from: number,
-      to: number,
-      value: number,
-      delta: ?number
-    }>,
-    holdersInfo: NumValueType
-  }) => {
-    console.log({ data });
-
-    return;
-
-    /* const ctx = document.getElementById("tokenholdersChart");
-    const myChart = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: data.labels,
-        datasets: [
-          {
-            data: data.data,
-            backgroundColor: [
-              "#d8d8d8",
-              "#a4b6cc",
-              "#7396ca",
-              "#5172a3",
-              "#4738ec",
-              "#7817e5",
-              "#00ffb8",
-              "#e0ff00",
-              "#e17745"
-            ],
-            borderColor: [
-              "#d8d8d8",
-              "#a4b6cc",
-              "#7396ca",
-              "#5172a3",
-              "#4738ec",
-              "#7817e5",
-              "#00ffb8",
-              "#e0ff00",
-              "#e17745"
-            ],
-            borderWidth: 1
-          }
-        ]
-      },
-      options: {
-        legend: {
-          display: false
-        },
-        scales: {
-          yAxes: [
-            {
-              gridLines: {
-                color: "rgba(109, 179, 228, 0.3)"
-              },
-              ticks: {
-                beginAtZero: true,
-                fontColor: "#6b737e",
-                fontFamily: "IBMPlexSansCond",
-                fontSize: 16,
-                callback: (value, index, values) => `${value}%`
-              }
-            }
-          ],
-          xAxes: [
-            {
-              gridLines: { display: false },
-              ticks: {
-                fontColor: "#6b737e",
-                fontFamily: "IBMPlexSansCond",
-                fontSize: 16
-              }
-            }
-          ]
-        }
-      }
-    }); */
-  };
-
   renderGrid = () => {
     const result = [];
     for (let i = 0; i <= 10; i++) {
@@ -258,18 +155,15 @@ class TokenholdersChart extends Component<PropsType, StateType> {
 
   drawDelta = (delta: number, value: number) => {
     const result = delta / (value - delta);
-    if (result === 0) {
-      return null;
-    }
 
     return (
       <span
         className={className({
-          positive: result > 0,
+          positive: result >= 0,
           negative: result < 0
         })}
       >
-        {result.toFixed(5)}%
+        {delta >= 0 ? `+${result.toFixed(5)}` : `${result.toFixed(5)}`}%
       </span>
     );
   };
