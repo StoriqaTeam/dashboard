@@ -73,10 +73,13 @@ class TokenInfo extends Component<{}, StateType> {
               <div className={classname("title uppercase", currency)}>
                 {currency}
               </div>
-              {formatNumValueWithCurrency({
-                currency,
-                numValue: price
-              })}
+              {formatNumValueWithCurrency(
+                {
+                  currency,
+                  numValue: price
+                },
+                8
+              )}
             </div>
           );
         }, toPairs(this.state.data.price))}

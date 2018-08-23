@@ -13,7 +13,10 @@ type FormatNumValuePropsType = {
   numValue: ?NumValueType
 };
 
-const formatNumValueWithCurrency = (input: FormatNumValuePropsType) => {
+const formatNumValueWithCurrency = (
+  input: FormatNumValuePropsType,
+  toFixed?: number
+) => {
   const { currency, numValue } = input;
   const delta = propOr(null, "delta", numValue);
   const value = propOr(null, "value", numValue);
@@ -26,7 +29,7 @@ const formatNumValueWithCurrency = (input: FormatNumValuePropsType) => {
   if (currency === "usd") {
     return (
       <div className="value">
-        ${formatNumber(value)}
+        ${formatNumber(toFixed ? value.toFixed(toFixed) : value)}
         {delta ? (
           <span
             className={classname("delta", {
