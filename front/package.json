@@ -23,7 +23,7 @@
     "babel-preset-flow": "^6.23.0",
     "babel-preset-react": "^6.24.1",
     "flow-bin": "^0.78.0",
-    "node-sass": "^4.9.3",
+    "node-sass": "^4.13.1",
     "parcel-bundler": "^1.9.7"
   },
   "scripts": {
